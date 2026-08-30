@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Frontdesk design tokens
+   The dashboard + marketing site use the "ink" palette below. Public pages
+   layer a per-site theme on top via the --site-* variables in themes.ts.
+--------------------------------------------------------------------------- */
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: var(--font-instrument), ui-serif, Georgia, serif;
+  --font-display: var(--font-grotesk), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink-50: #f6f6f5;
+  --color-ink-100: #ececea;
+  --color-ink-200: #d9d9d5;
+  --color-ink-300: #b8b8b2;
+  --color-ink-400: #8d8d86;
+  --color-ink-500: #6b6b64;
+  --color-ink-600: #52524d;
+  --color-ink-700: #3d3d39;
+  --color-ink-800: #232324;
+  --color-ink-900: #141416;
+  --color-ink-950: #0a0a0b;
+
+  --color-brand-50: #fff3ed;
+  --color-brand-100: #ffe3d4;
+  --color-brand-200: #ffc2a8;
+  --color-brand-300: #ff9871;
+  --color-brand-400: #ff6a38;
+  --color-brand-500: #f8481a;
+  --color-brand-600: #e42f0c;
+  --color-brand-700: #bd200d;
+  --color-brand-800: #961d13;
+  --color-brand-900: #791c13;
+
+  --color-accent-500: #1e56d9;
+  --color-accent-600: #1745b4;
+
+  --color-positive: #12876f;
+  --color-caution: #b45309;
+  --color-negative: #c62d2d;
+
+  --radius-card: 1rem;
+  --shadow-lift: 0 1px 2px rgb(10 10 11 / 0.04), 0 8px 24px -12px rgb(10 10 11 / 0.16);
+  --shadow-pop: 0 2px 4px rgb(10 10 11 / 0.05), 0 24px 48px -20px rgb(10 10 11 / 0.28);
+
+  --animate-fade-up: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-marquee: marquee 42s linear infinite;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+:root {
+  color-scheme: light;
+  --page-bg: #ffffff;
+}
+
+* { border-color: color-mix(in oklab, var(--color-ink-200) 100%, transparent); }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  background: var(--page-bg);
+  color: var(--color-ink-950);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection { background: var(--color-brand-200); color: var(--color-ink-950); }
+
+/* Focus ring shared by every interactive control */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Utilities ---------------------------------------------------------------- */
+@utility grain {
+  background-image: radial-gradient(circle at 1px 1px, rgb(255 255 255 / 0.06) 1px, transparent 0);
+  background-size: 4px 4px;
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+@utility text-balance-tight {
+  text-wrap: balance;
+  letter-spacing: -0.03em;
+}
+
+/* Scoped scrollbar styling for dashboard panes */
+.thin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-ink-200) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
