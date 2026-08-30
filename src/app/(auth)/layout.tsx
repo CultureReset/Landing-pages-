@@ -4,7 +4,7 @@ import { LogoLink } from "@/components/brand";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="grid min-h-screen lg:grid-cols-[1fr_minmax(0,44%)]">
+    <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[1fr_minmax(0,44%)]">
       <main className="flex flex-col px-6 py-8 sm:px-10">
         <LogoLink />
         <div className="flex flex-1 items-center justify-center py-10">

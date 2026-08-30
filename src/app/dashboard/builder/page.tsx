@@ -26,7 +26,7 @@ export default async function BuilderPage() {
         description="Everything a visitor sees, in one place. Changes save straight to your live page."
       />
 
-      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0">
           <Tabs
             tabs={[

@@ -1,8 +1,16 @@
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, isAbsolute, join } from "node:path";
 
-const DB_PATH = resolve(process.env.FRONTDESK_DB_PATH || "./data/frontdesk.db");
+/**
+ * Resolved lazily and scoped under the working directory so the bundler does
+ * not trace the whole project as a filesystem dependency.
+ */
+function dbPath(): string {
+  const configured = process.env.FRONTDESK_DB_PATH || "data/frontdesk.db";
+  // The database lives outside the bundle; do not trace it as a build input.
+  return isAbsolute(configured) ? configured : join(/* turbopackIgnore: true */ process.cwd(), configured);
+}
 
 const SCHEMA = `
 PRAGMA journal_mode = WAL;
@@ -169,8 +177,9 @@ type Global = typeof globalThis & { __frontdeskDb?: DatabaseSync };
 const g = globalThis as Global;
 
 function open(): DatabaseSync {
-  mkdirSync(dirname(DB_PATH), { recursive: true });
-  const db = new DatabaseSync(DB_PATH);
+  const path = dbPath();
+  mkdirSync(dirname(path), { recursive: true });
+  const db = new DatabaseSync(path);
   db.exec(SCHEMA);
   return db;
 }

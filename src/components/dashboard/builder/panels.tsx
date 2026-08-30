@@ -336,7 +336,7 @@ export function HighlightsPanel({ stats }: { stats: SiteStat[] }) {
       action={saveStatsAction}
     >
       {rows.map((s, i) => (
-        <div key={i} className="grid gap-3 sm:grid-cols-[130px_1fr]">
+        <div key={i} className="grid grid-cols-1 gap-3 sm:grid-cols-[130px_1fr]">
           <Field label={i === 0 ? "Figure" : undefined}>
             <Input name={`stat_value_${i}`} defaultValue={s.value} placeholder="14" maxLength={12} />
           </Field>

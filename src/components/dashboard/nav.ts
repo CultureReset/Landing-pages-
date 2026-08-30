@@ -14,7 +14,7 @@ export const NAV: NavItem[] = [
   { href: "/dashboard/testimonials", label: "Testimonials", icon: "quote", group: "Your page" },
   { href: "/dashboard/leads", label: "Leads", icon: "inbox", group: "Grow" },
   { href: "/dashboard/analytics", label: "Analytics", icon: "chart", group: "Grow" },
-  { href: "/dashboard/studio", label: "AI Studio", icon: "sparkles", group: "Grow" },
+  { href: "/dashboard/studio", label: "Studio", icon: "sparkles", group: "Grow" },
   { href: "/dashboard/share", label: "Share & QR", icon: "qr", group: "Grow" },
   { href: "/dashboard/team", label: "Team", icon: "users", group: "Account" },
   { href: "/dashboard/settings", label: "Settings", icon: "settings", group: "Account" },

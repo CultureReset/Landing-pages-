@@ -48,7 +48,7 @@ export function ItemEditor({
     <form action={action} className="space-y-5">
       {item && <input type="hidden" name="id" value={item.id} />}
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-5">
           <Card>
             <CardHeader title="The basics" />
@@ -104,7 +104,7 @@ export function ItemEditor({
               title={vocab.priceLabel}
               description="Leave the figure blank and use the note for “Price on application”."
             />
-            <div className="grid gap-4 p-5 sm:grid-cols-[110px_1fr_1fr]">
+            <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-[110px_1fr_1fr]">
               <Field label="Currency">
                 <Select name="currency" value={currency} onChange={(e) => setCurrency(e.target.value)}>
                   {CURRENCIES.map((c) => (

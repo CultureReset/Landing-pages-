@@ -661,6 +661,12 @@ const LEAD_NAMES = [
   ["Noemi Castellanos", "noemi.c@gmail.com", "+1 845 555 0166"],
   ["Felix Andersen", "felix@andersen.dk", "+45 20 55 01 44"],
   ["Rhiannon Pryce", "r.pryce@gmail.com", "+44 7911 123 456"],
+  ["Owen Brackley", "owen.brackley@gmail.com", "+1 718 555 0193"],
+  ["Ada Nwachukwu", "ada.n@fastmail.com", "+1 347 555 0128"],
+  ["Lucas Ferrari", "lucas@ferrari.it", "+39 340 555 0117"],
+  ["Hattie Mullins", "hattie.mullins@icloud.com", "+1 828 555 0175"],
+  ["Kofi Mensah", "kofi.mensah@gmail.com", "+1 512 555 0163"],
+  ["Ingrid Bakke", "ingrid.bakke@proton.me", "+47 400 55 018"],
 ];
 
 const LEAD_MESSAGES = [
@@ -674,6 +680,12 @@ const LEAD_MESSAGES = [
   "What's the process and how far ahead do you book?",
   "Sent this to my partner and we'd both like to see it. Sunday work?",
   "Been following for a while, finally ready to talk. Best number to reach you?",
+  "My partner and I have been saving for two years. Where would you start with us?",
+  "Is the price negotiable, or is that where it sits? No games from me either.",
+  "I need this sorted before the end of the month. Is that realistic?",
+  "A colleague recommended you. What does the first step look like?",
+  "Two questions: do you travel, and what's your lead time right now?",
+  "Left a voicemail earlier — writing in case that's easier for you.",
 ];
 
 const LEAD_STATUSES = ["new", "new", "new", "contacted", "contacted", "qualified", "won", "lost"];
@@ -800,7 +812,7 @@ export function seed(): { email: string; password: string } {
 
     const leadCount = isDemo ? 14 : 6;
     for (let i = 0; i < leadCount; i++) {
-      const person = LEAD_NAMES[(index * 3 + i) % LEAD_NAMES.length];
+      const person = LEAD_NAMES[(index * 5 + i * 7) % LEAD_NAMES.length];
       const daysAgo = Math.floor(Math.random() * 45);
       const created = new Date(Date.now() - daysAgo * 864e5 - Math.random() * 8.64e7);
       run(
@@ -812,7 +824,7 @@ export function seed(): { email: string; password: string } {
         person[0],
         person[1],
         person[2],
-        LEAD_MESSAGES[(index * 2 + i) % LEAD_MESSAGES.length],
+        LEAD_MESSAGES[(index * 3 + i * 5) % LEAD_MESSAGES.length],
         ["Page form", "Listing enquiry", "QR code", "Instagram"][i % 4],
         daysAgo < 3 ? "new" : LEAD_STATUSES[i % LEAD_STATUSES.length],
         "",

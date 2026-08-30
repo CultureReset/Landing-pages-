@@ -75,7 +75,7 @@ export function ButtonLink({
 export function Card({ className, children, ...rest }: ComponentProps<"div">) {
   return (
     <div
-      className={cx("rounded-2xl border border-ink-200 bg-white", className)}
+      className={cx("min-w-0 rounded-2xl border border-ink-200 bg-white", className)}
       {...rest}
     >
       {children}

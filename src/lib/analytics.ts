@@ -30,8 +30,15 @@ export interface SiteStats {
   referrers: TopRow[];
 }
 
+/**
+ * Midnight local time, (days - 1) days ago — the same window the daily series
+ * buckets cover, so totals and charts always agree.
+ */
 function since(days: number): string {
-  return new Date(Date.now() - days * 864e5).toISOString();
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - (days - 1));
+  return d.toISOString();
 }
 
 function countKind(siteId: string, kinds: EventKind[], from: string, to?: string): number {
@@ -82,10 +89,11 @@ function top(siteId: string, kind: EventKind, days: number, limit = 6): TopRow[]
   ).map((r) => ({ id: r.target_id, label: r.target_label, count: r.c }));
 }
 
-function breakdown(siteId: string, column: "device" | "referrer", days: number, limit = 5): TopRow[] {
+/** Splits page views only, so the parts add up to the headline view count. */
+function breakdown(siteId: string, column: "device" | "referrer", days: number, limit = 6): TopRow[] {
   return all<{ v: string; c: number }>(
     `SELECT COALESCE(NULLIF(${column}, ''), 'Direct') AS v, COUNT(*) AS c FROM events
-     WHERE site_id = ? AND created_at >= ? GROUP BY v ORDER BY c DESC LIMIT ?`,
+     WHERE site_id = ? AND kind = 'view' AND created_at >= ? GROUP BY v ORDER BY c DESC LIMIT ?`,
     siteId,
     since(days),
     limit,
@@ -100,6 +108,7 @@ function pctDelta(current: number, previous: number): number {
 export function siteStats(siteId: string, days = 30): SiteStats {
   const from = since(days);
   const prevFrom = since(days * 2);
+  // `from` doubles as the exclusive upper bound of the previous window.
   const views = countKind(siteId, ["view"], from);
   const clicks = countKind(siteId, ["link_click", "action_click"], from);
   const leads = countKind(siteId, ["lead"], from);
