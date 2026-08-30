@@ -62,7 +62,15 @@
   --page-bg: #ffffff;
 }
 
-* { border-color: color-mix(in oklab, var(--color-ink-200) 100%, transparent); }
+/* Tailwind v4 defaults borders to currentColor; restore a neutral default.
+   This must live in @layer base so utility classes still win. */
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-ink-200);
+  }
+}
 
 html { -webkit-text-size-adjust: 100%; }
 

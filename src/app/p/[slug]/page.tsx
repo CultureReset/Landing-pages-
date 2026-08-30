@@ -30,9 +30,19 @@ export async function generateMetadata({
   };
 }
 
-export default async function PublicPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function PublicPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ preview?: string }>;
+}) {
   const { slug } = await params;
+  const { preview } = await searchParams;
   const data = loadPageData(slug);
-  if (!data || data.site.published !== 1) notFound();
-  return <SitePage data={data} />;
+  const isPreview = preview === "1";
+  if (!data) notFound();
+  // Drafts are visible only through the dashboard preview frame.
+  if (data.site.published !== 1 && !isPreview) notFound();
+  return <SitePage data={data} preview={isPreview} />;
 }

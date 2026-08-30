@@ -253,6 +253,20 @@ export function Tabs({
 
 /* ------------------------------------------------------- Reorderable list */
 
+export interface ReorderHandle {
+  /** Spread onto the element that should be draggable. */
+  drag: {
+    draggable: true;
+    onDragStart: () => void;
+    onDragEnd: () => void;
+  };
+  moveUp: () => void;
+  moveDown: () => void;
+  index: number;
+  isFirst: boolean;
+  isLast: boolean;
+}
+
 export function ReorderList({
   ids,
   onReorder,
@@ -260,23 +274,28 @@ export function ReorderList({
 }: {
   ids: string[];
   onReorder: (ids: string[]) => Promise<void> | void;
-  children: (id: string, handleProps: Record<string, unknown>, index: number) => ReactNode;
+  children: (id: string, handle: ReorderHandle) => ReactNode;
 }) {
   const [order, setOrder] = useState(ids);
   const dragging = useRef<string | null>(null);
   const [, start] = useTransition();
 
-  useEffect(() => setOrder(ids), [ids.join("|")]); // eslint-disable-line react-hooks/exhaustive-deps
+  const key = ids.join("|");
+  useEffect(() => setOrder(ids), [key]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function commit(next: string[]) {
+    setOrder(next);
+    start(async () => {
+      await onReorder(next);
+    });
+  }
 
   function move(from: number, to: number) {
     if (to < 0 || to >= order.length || from === to) return;
     const next = [...order];
     const [moved] = next.splice(from, 1);
     next.splice(to, 0, moved);
-    setOrder(next);
-    start(async () => {
-      await onReorder(next);
-    });
+    commit(next);
   }
 
   return (
@@ -296,14 +315,11 @@ export function ReorderList({
           onDrop={(e) => {
             e.preventDefault();
             dragging.current = null;
-            start(async () => {
-              await onReorder(order);
-            });
+            commit(order);
           }}
         >
-          {children(
-            itemId,
-            {
+          {children(itemId, {
+            drag: {
               draggable: true,
               onDragStart: () => {
                 dragging.current = itemId;
@@ -311,13 +327,13 @@ export function ReorderList({
               onDragEnd: () => {
                 dragging.current = null;
               },
-              "data-move-up": () => move(index, index - 1),
-              "data-move-down": () => move(index, index + 1),
-              moveUp: () => move(index, index - 1),
-              moveDown: () => move(index, index + 1),
             },
+            moveUp: () => move(index, index - 1),
+            moveDown: () => move(index, index + 1),
             index,
-          )}
+            isFirst: index === 0,
+            isLast: index === order.length - 1,
+          })}
         </div>
       ))}
     </div>
