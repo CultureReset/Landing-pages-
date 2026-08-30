@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { LogoLink } from "@/components/brand";
+import { brand } from "@/config/brand";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -11,7 +12,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <div className="w-full max-w-sm">{children}</div>
         </div>
         <footer className="flex flex-wrap gap-x-5 gap-y-2 text-[12px] text-ink-400">
-          <span>© {new Date().getFullYear()} Frontdesk</span>
+          <span>© {new Date().getFullYear()} {brand.name}</span>
           <Link href="/legal/privacy" className="hover:text-ink-700">Privacy</Link>
           <Link href="/legal/terms" className="hover:text-ink-700">Terms</Link>
         </footer>

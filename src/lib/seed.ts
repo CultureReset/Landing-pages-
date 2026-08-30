@@ -742,6 +742,8 @@ export function seed(): { email: string; password: string } {
       credential: s.credential,
       verified: 1,
       published: 1,
+      // Demo tenants are curated into the public directory; real signups are not.
+      featured: 1,
       theme: { ...theme },
       layout: DEFAULT_SECTIONS.map((d) =>
         d.id === "map" && !s.address ? { ...d, enabled: false } : { ...d },

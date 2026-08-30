@@ -1,28 +1,28 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireSite } from "@/lib/guard";
-import { createLink, deleteLink, linkById, linksForSite, reorderLinks, updateLink } from "@/lib/repo";
+import { quota } from "@/lib/entitlements";
+import { NOT_YOURS, ownedLink, tenant } from "@/lib/tenant";
+import { createLink, deleteLink, reorderLinks, updateLink } from "@/lib/repo";
+import { LINK_KIND_OPTIONS } from "@/lib/links";
+import type { LinkKind } from "@/lib/types";
 import type { ActionState } from "./site";
 
 function refresh() {
   revalidatePath("/dashboard", "layout");
 }
 
-/** Confirms a link belongs to the signed-in user's site before touching it. */
-async function ownedLink(linkId: string) {
-  const { site } = await requireSite();
-  const link = linkById(linkId);
-  if (!link || link.site_id !== site.id) return null;
-  return { site, link };
-}
+const KINDS = new Set(LINK_KIND_OPTIONS.map((o) => o.value));
 
 export async function saveLinkAction(_prev: ActionState, form: FormData): Promise<ActionState> {
-  const { site } = await requireSite();
+  const ctx = await tenant();
   const linkId = String(form.get("id") ?? "");
 
+  const kind = String(form.get("kind") ?? "link");
+  if (!KINDS.has(kind)) return { error: "Pick a link type from the list." };
+
   const payload = {
-    kind: String(form.get("kind") ?? "link") as never,
+    kind: kind as LinkKind,
     label: String(form.get("label") ?? "").trim().slice(0, 80),
     sublabel: String(form.get("sublabel") ?? "").trim().slice(0, 100),
     value: String(form.get("value") ?? "").trim().slice(0, 500),
@@ -34,19 +34,33 @@ export async function saveLinkAction(_prev: ActionState, form: FormData): Promis
   if (!payload.label) return { error: "Give the link a label." };
   if (!payload.value) return { error: "Add a destination — a URL, phone number or email." };
 
+  const usage = {
+    planId: ctx.user.plan,
+    siteId: ctx.site.id,
+    galleryCount: ctx.site.gallery.length,
+    teamId: ctx.user.team_id,
+  };
+
   if (linkId) {
     const owned = await ownedLink(linkId);
-    if (!owned) return { error: "That link no longer exists." };
-    updateLink(linkId, payload);
-  } else {
-    if (payload.is_action && linksForSite(site.id).filter((l) => l.is_action === 1).length >= 5) {
-      return { error: "Quick actions are capped at five — turn one off first." };
+    if (!owned) return { error: NOT_YOURS };
+
+    // Promoting an existing link into the action row consumes a slot.
+    if (payload.is_action === 1 && owned.row.is_action !== 1) {
+      const actions = quota("quickActions", usage);
+      if (!actions.allowed) return { error: actions.message };
     }
-    createLink(site.id, payload);
+    updateLink(linkId, payload);
+    refresh();
+    return { ok: true, message: "Link updated." };
   }
 
+  const capacity = quota(payload.is_action === 1 ? "quickActions" : "links", usage);
+  if (!capacity.allowed) return { error: capacity.message };
+
+  createLink(ctx.site.id, payload);
   refresh();
-  return { ok: true, message: linkId ? "Link updated." : "Link added." };
+  return { ok: true, message: "Link added." };
 }
 
 export async function deleteLinkAction(linkId: string): Promise<void> {
@@ -64,21 +78,30 @@ export async function toggleLinkAction(linkId: string, active: boolean): Promise
 }
 
 export async function reorderLinksAction(orderedIds: string[]): Promise<void> {
-  const { site } = await requireSite();
-  reorderLinks(site.id, orderedIds);
+  const ctx = await tenant();
+  // Scoped by site_id in the query, so ids from another tenant are no-ops.
+  reorderLinks(ctx.site.id, orderedIds);
   refresh();
 }
 
 export async function duplicateLinkAction(linkId: string): Promise<void> {
   const owned = await ownedLink(linkId);
   if (!owned) return;
-  const { site, link } = owned;
-  createLink(site.id, {
-    kind: link.kind,
-    label: `${link.label} copy`,
-    sublabel: link.sublabel,
-    value: link.value,
-    highlight: link.highlight,
+
+  const capacity = quota("links", {
+    planId: owned.user.plan,
+    siteId: owned.site.id,
+    galleryCount: owned.site.gallery.length,
+    teamId: owned.user.team_id,
+  });
+  if (!capacity.allowed) return;
+
+  createLink(owned.site.id, {
+    kind: owned.row.kind,
+    label: `${owned.row.label} copy`,
+    sublabel: owned.row.sublabel,
+    value: owned.row.value,
+    highlight: owned.row.highlight,
     is_action: 0,
     active: 0,
   });

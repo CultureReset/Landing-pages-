@@ -1,34 +1,34 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireSite } from "@/lib/guard";
-import { deleteLead, leadById, updateLead } from "@/lib/repo";
+import { NOT_YOURS, ownedLead } from "@/lib/tenant";
+import { deleteLead, updateLead } from "@/lib/repo";
 import type { LeadStatus } from "@/lib/types";
 
 function refresh() {
   revalidatePath("/dashboard", "layout");
 }
 
-async function ownedLead(leadId: string) {
-  const { site } = await requireSite();
-  const lead = leadById(leadId);
-  return lead && lead.site_id === site.id ? lead : null;
-}
+const STATUSES: LeadStatus[] = ["new", "contacted", "qualified", "won", "lost"];
 
 export async function setLeadStatusAction(leadId: string, status: LeadStatus): Promise<void> {
-  if (!(await ownedLead(leadId))) return;
+  if (!STATUSES.includes(status)) return;
+  const owned = await ownedLead(leadId);
+  if (!owned) return;
   updateLead(leadId, { status });
   refresh();
 }
 
 export async function saveLeadNotesAction(leadId: string, notes: string): Promise<void> {
-  if (!(await ownedLead(leadId))) return;
+  const owned = await ownedLead(leadId);
+  if (!owned) return;
   updateLead(leadId, { notes: notes.slice(0, 4000) });
   refresh();
 }
 
-export async function deleteLeadAction(leadId: string): Promise<void> {
-  if (!(await ownedLead(leadId))) return;
+export async function deleteLeadAction(leadId: string): Promise<{ error?: string } | void> {
+  const owned = await ownedLead(leadId);
+  if (!owned) return { error: NOT_YOURS };
   deleteLead(leadId);
   refresh();
 }

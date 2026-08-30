@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { MarketingFooter, MarketingNav } from "@/components/marketing/chrome";
 import { currentUser } from "@/lib/auth";
+import { brand } from "@/config/brand";
 
 const DOCS: Record<string, { title: string; updated: string; sections: { heading: string; body: string[] }[] }> = {
   privacy: {
@@ -11,7 +12,7 @@ const DOCS: Record<string, { title: string; updated: string; sections: { heading
       {
         heading: "What this covers",
         body: [
-          "This policy explains what Frontdesk collects when you run a page with us, and what visitors to your page generate when they use it. It is written to be read, not to be survived.",
+          `This policy explains what ${brand.name} collects when you run a page with us, and what visitors to your page generate when they use it. It is written to be read, not to be survived.`,
         ],
       },
       {
@@ -42,7 +43,7 @@ const DOCS: Record<string, { title: string; updated: string; sections: { heading
       },
       {
         heading: "Getting in touch",
-        body: ["Questions about any of this go to privacy@frontdesk.example, and a person will answer."],
+        body: [`Questions about any of this go to ${brand.support.privacy}, and a person will answer.`],
       },
     ],
   },
@@ -108,7 +109,7 @@ const DOCS: Record<string, { title: string; updated: string; sections: { heading
       },
       {
         heading: "How to ask",
-        body: ["Email billing@frontdesk.example from your account address. We do not require a reason."],
+        body: [`Email ${brand.support.billing} from your account address. We do not require a reason.`],
       },
     ],
   },
@@ -156,7 +157,7 @@ export default async function LegalPage({ params }: { params: Promise<{ doc: str
         </div>
 
         <p className="mt-14 rounded-2xl border border-ink-200 bg-ink-50 p-5 text-[13.5px] leading-relaxed text-ink-500">
-          Frontdesk is a working demonstration build. These documents describe how the software behaves and are
+          {brand.name} is a working demonstration build. These documents describe how the software behaves and are
           written as a realistic starting point — have a lawyer review them before you rely on them commercially.
         </p>
       </main>

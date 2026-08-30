@@ -1,5 +1,5 @@
 import "server-only";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { currentUser } from "./auth";
 import { createSite, siteByUser } from "./repo";
 import { DEFAULT_HOURS, DEFAULT_SECTIONS, DEFAULT_THEME } from "./themes";
@@ -8,6 +8,14 @@ import type { SessionUser, Site } from "./types";
 export async function requireUser(): Promise<SessionUser> {
   const user = await currentUser();
   if (!user) redirect("/login");
+  if (user.suspended === 1) redirect("/suspended");
+  return user;
+}
+
+/** Operator console guard. Admins are configured by email, never in the UI. */
+export async function requireAdmin(): Promise<SessionUser> {
+  const user = await requireUser();
+  if (!user.isAdmin) notFound();
   return user;
 }
 

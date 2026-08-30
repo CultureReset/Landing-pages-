@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { createLead, itemById, recordEvent, siteById } from "@/lib/repo";
-
-/** Naive in-memory throttle — one submission per site per IP every 20 seconds. */
-const recent = new Map<string, number>();
+import { LIMITS, clientIp, hit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   let body: Record<string, unknown>;
@@ -19,7 +17,9 @@ export async function POST(request: Request) {
 
   const siteId = String(body.siteId ?? "");
   const site = siteById(siteId);
-  if (!site) return NextResponse.json({ error: "Unknown page" }, { status: 404 });
+  if (!site || site.suspended === 1) {
+    return NextResponse.json({ error: "Unknown page" }, { status: 404 });
+  }
 
   const name = String(body.name ?? "").trim();
   const email = String(body.email ?? "").trim();
@@ -31,13 +31,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "That email address doesn't look right" }, { status: 400 });
   }
 
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-  const key = `${siteId}:${ip}`;
-  const last = recent.get(key) ?? 0;
-  if (Date.now() - last < 20_000) {
-    return NextResponse.json({ error: "You just sent a message — give it a moment." }, { status: 429 });
+  const throttle = hit(
+    `lead:${siteId}:${clientIp(request)}`,
+    LIMITS.leads.limit,
+    LIMITS.leads.windowSeconds,
+  );
+  if (!throttle.ok) {
+    return NextResponse.json(
+      { error: "You've sent a few messages already — give it a few minutes." },
+      { status: 429, headers: { "Retry-After": String(throttle.retryAfterSeconds) } },
+    );
   }
-  recent.set(key, Date.now());
 
   const itemId = body.itemId ? String(body.itemId) : null;
   const item = itemId ? itemById(itemId) : null;

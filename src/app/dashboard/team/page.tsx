@@ -3,7 +3,7 @@ import Link from "next/link";
 import { TeamManager } from "@/components/dashboard/team-manager";
 import { PageHeader } from "@/components/ui/primitives";
 import { requireUser } from "@/lib/guard";
-import { allSites } from "@/lib/repo";
+import { sitesForUsers } from "@/lib/repo";
 import { teamById, teamMembers } from "@/lib/users";
 
 export const metadata: Metadata = { title: "Team" };
@@ -13,7 +13,8 @@ export default async function TeamPage() {
   const user = await requireUser();
   const team = user.team_id ? teamById(user.team_id) : undefined;
   const members = user.team_id ? teamMembers(user.team_id) : [];
-  const sites = allSites();
+  // Scoped to this team — never load every tenant in the system.
+  const sites = sitesForUsers(members.map((m) => m.id));
 
   const rows = members.map((m) => {
     const site = sites.find((s) => s.user_id === m.id);

@@ -19,6 +19,7 @@ import { compact, relativeTime } from "@/lib/format";
 import { requireSite } from "@/lib/guard";
 import { itemsForSite, leadsForSite, linksForSite } from "@/lib/repo";
 import { vocab } from "@/lib/vocab";
+import { pagePath } from "@/config/brand";
 
 export const metadata: Metadata = { title: "Overview" };
 export const dynamic = "force-dynamic";
@@ -122,7 +123,7 @@ export default async function OverviewPage() {
             title="Your live page"
             action={
               <Link
-                href={`/p/${site.slug}`}
+                href={pagePath(site.slug)}
                 target="_blank"
                 className="text-[12.5px] font-medium text-ink-500 hover:text-ink-950"
               >
@@ -137,10 +138,10 @@ export default async function OverviewPage() {
             </div>
             <div>
               <p className="text-[13.5px] font-medium text-ink-950">{site.business_name}</p>
-              <p className="mt-0.5 font-mono text-[12px] text-ink-500">/p/{site.slug}</p>
+              <p className="mt-0.5 font-mono text-[12px] text-ink-500">{pagePath(site.slug)}</p>
             </div>
             <div className="flex gap-2">
-              <CopyButton value={`/p/${site.slug}`} label="Copy link" />
+              <CopyButton value={pagePath(site.slug)} label="Copy link" />
               <ButtonLink href="/dashboard/share" variant="secondary" size="sm" icon="qr">
                 Share kit
               </ButtonLink>

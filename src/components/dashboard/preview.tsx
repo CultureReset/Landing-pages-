@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Icon } from "@/components/ui/icon";
 import { cx } from "@/components/ui/primitives";
+import { pagePath } from "@/config/brand";
 
 /**
  * Renders the real public page inside an iframe so media queries and theme
@@ -19,7 +20,7 @@ export function LivePreview({
 }) {
   const [device, setDevice] = useState<"phone" | "desktop">("phone");
   const [nonce, setNonce] = useState(0);
-  const src = `/p/${slug}?preview=1&v=${encodeURIComponent(version)}&n=${nonce}`;
+  const src = `${pagePath(slug)}?preview=1&v=${encodeURIComponent(version)}&n=${nonce}`;
 
   return (
     <div className={cx("flex flex-col items-center", className)}>
@@ -75,7 +76,7 @@ export function LivePreview({
       <p className="mt-3 text-center text-[11.5px] leading-relaxed text-ink-400">
         Saved changes appear here immediately.
         <br />
-        Visitors see this at <code className="font-mono">/p/{slug}</code>
+        Visitors see this at <code className="font-mono">{pagePath(slug)}</code>
       </p>
     </div>
   );

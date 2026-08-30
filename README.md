@@ -121,6 +121,75 @@ hashing. Set `FRONTDESK_SESSION_SECRET` in production.
 deterministic abstract artwork with no third-party image host, so the demo
 renders instantly and works offline. Real users upload their own.
 
+### Multi-tenant by construction
+
+The platform is built to be signed up to by many unrelated businesses at once.
+
+**Isolation.** Every row that belongs to a tenant carries its `site_id`, and
+every mutation that accepts an id from the client goes through a guard in
+`src/lib/tenant.ts` that refuses anything whose `site_id` is not the caller's.
+Ids are 96 bits of CSPRNG output, but that is defence in depth — the guard is
+the control. Reordering endpoints are additionally scoped in SQL, so a foreign
+id is inert rather than merely rejected.
+
+**Privacy between tenants.** A customer's page is never advertised because it
+happens to be published. The marketing site reads `featuredSites()`, which
+returns only pages an operator has explicitly featured from the admin console.
+The team roll-up loads sites for a known list of user ids rather than scanning
+the table.
+
+**Suspension.** Suspending a tenant takes their page offline (public pages, QR,
+vCard and analytics beacons all treat it as non-existent) and locks the
+dashboard, without deleting anything.
+
+**Handles.** Reserved words are refused, uniqueness is enforced
+case-insensitively by a database index, and claims are atomic — the index is
+the arbiter, not a prior read — so two simultaneous signups cannot both take
+the same handle. Creation retries with a suffix on collision.
+
+**Abuse control.** `src/lib/rate-limit.ts` is a bounded fixed-window limiter
+covering sign-in (per address *and* per account), sign-up, enquiry forms,
+uploads and analytics beacons. It is in-process by design; behind multiple
+instances, swap the single `hit()` function for a shared store.
+
+**Limits that are real.** `src/config/plans.ts` defines what each plan includes,
+and `src/lib/entitlements.ts` turns that into decisions enforced when a tenant
+adds an entry, a link, a quick action, a gallery image, a testimonial, a seat or
+an upload. Tenants see their usage in Settings → Plan.
+
+Run the checks:
+
+```bash
+npm run test:tenancy
+```
+
+Thirty-four assertions covering cross-tenant reads, directory privacy, handle
+collisions (including 25 concurrent claims on one base name), plan ceilings,
+storage quotas, rate limiting and suspension.
+
+### The operator console
+
+Set `ADMIN_EMAILS` and those accounts get `/admin`: every tenant with their
+plan, entry/lead/view counts and storage; search and pagination; and per-tenant
+controls to change plan, grant credits, feature a page in the public directory,
+or suspend. Everyone else gets a 404 — the route does not advertise itself.
+Admins cannot suspend their own account.
+
+### Configuration, not code
+
+`src/config/` is the layer you edit to make this yours:
+
+| File | Controls |
+| --- | --- |
+| `brand.ts` | Product name, tagline, URL, page prefix, support emails, "powered by" |
+| `plans.ts` | Plans, prices, copy **and** the limits enforced in the product |
+| `features.ts` | Signups open, invite-only, demo account, public directory, uploads, handle changes |
+| `marketing.ts` | Landing page copy: hero, steps, channels, FAQ |
+| `reserved.ts` | Handles nobody may claim |
+
+Nothing outside `src/config/` contains the brand name. Most values also accept
+an environment variable, so one build can serve several deployments.
+
 ### Multi-vertical by design
 
 One engine serves every business type. `src/lib/vocab.ts` maps a business type
@@ -144,9 +213,18 @@ Copy `.env.example` to `.env.local`:
 
 | Variable | Purpose |
 | --- | --- |
-| `FRONTDESK_SESSION_SECRET` | Signs session cookies. Generate with `openssl rand -hex 32`. |
 | `FRONTDESK_DB_PATH` | Where the SQLite file lives. Defaults to `data/frontdesk.db`. |
 | `NEXT_PUBLIC_BASE_URL` | Used for QR codes, share links and canonical tags. |
+| `NEXT_PUBLIC_BRAND_NAME` | White-labels the product name everywhere. |
+| `NEXT_PUBLIC_PAGE_PREFIX` | URL segment public pages sit under (default `p`). |
+| `ADMIN_EMAILS` | Comma-separated emails allowed into `/admin`. Empty means nobody. |
+| `SIGNUPS_OPEN` | Set `false` to close registration. |
+| `SIGNUP_INVITE_ONLY` / `SIGNUP_INVITE_CODES` | Gate registration behind codes. |
+| `PUBLIC_DIRECTORY` | Show operator-featured pages on the marketing site. |
+| `NEXT_PUBLIC_DEMO_ACCOUNT` | One-click demo sign-in. **Turn off in production.** |
+
+Sessions are opaque 32-byte random tokens stored server-side and revocable, so
+there is no signing secret to manage.
 
 ## Scripts
 
@@ -156,6 +234,7 @@ Copy `.env.example` to `.env.local`:
 | `npm run build` | Production build |
 | `npm start` | Serve the production build |
 | `npm run seed` | Wipe and reload the demo businesses |
+| `npm run test:tenancy` | Multi-tenant isolation, limits and rate-limit checks |
 
 ## Demo accounts
 
@@ -185,4 +264,12 @@ the password **demo1234**.
   `src/lib/writer.ts` — the call sites take the same shape.
 - **Scaling past SQLite** — every query lives in `src/lib/repo.ts` and
   `src/lib/users.ts`. Swapping in Postgres means rewriting those two files and
-  nothing else.
+  nothing else. SQLite runs in WAL mode with a busy timeout, which comfortably
+  handles a few hundred tenants on one box; the ceiling is write concurrency,
+  not reads.
+- **Schema changes** — `MIGRATIONS` in `src/lib/db.ts` is an ordered, run-once
+  list applied at startup. Append entries; never edit one that has shipped. A
+  database built by an earlier version upgrades in place, verified against a
+  rewound copy.
+- **Rate limiting across instances** — `hit()` in `src/lib/rate-limit.ts` is the
+  single seam. Point it at Redis when you run more than one process.

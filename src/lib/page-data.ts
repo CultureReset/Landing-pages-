@@ -3,7 +3,8 @@ import type { PageDataResult } from "./types-page";
 
 export function loadPageData(slug: string): PageDataResult | null {
   const site = siteBySlug(slug);
-  if (!site) return null;
+  // A suspended page behaves exactly like one that never existed.
+  if (!site || site.suspended === 1) return null;
   const links = linksForSite(site.id, true);
   return {
     site,

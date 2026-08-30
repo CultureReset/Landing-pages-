@@ -6,12 +6,18 @@ import { Field, Input, cx } from "@/components/ui/primitives";
 import { SubmitButton } from "@/components/ui/interactive";
 import { Icon } from "@/components/ui/icon";
 
-const PLANS = [
+const AUDIENCES = [
   { id: "individual", name: "Just me", detail: "One page, one dashboard" },
   { id: "team", name: "A team", detail: "A page each, one roll-up view" },
 ];
 
-export function SignupForm({ defaultPlan }: { defaultPlan: string }) {
+export function SignupForm({
+  defaultPlan,
+  inviteOnly,
+}: {
+  defaultPlan: string;
+  inviteOnly: boolean;
+}) {
   const [state, action] = useActionState<FormState, FormData>(signUpAction, {});
   const [plan, setPlan] = useState(defaultPlan);
 
@@ -22,7 +28,7 @@ export function SignupForm({ defaultPlan }: { defaultPlan: string }) {
       <div>
         <span className="mb-1.5 block text-[13px] font-medium text-ink-800">Who is this for?</span>
         <div className="grid grid-cols-2 gap-2">
-          {PLANS.map((p) => (
+          {AUDIENCES.map((p) => (
             <button
               key={p.id}
               type="button"
@@ -50,6 +56,12 @@ export function SignupForm({ defaultPlan }: { defaultPlan: string }) {
       <Field label="Password" hint="At least 8 characters.">
         <Input name="password" type="password" autoComplete="new-password" placeholder="••••••••" required minLength={8} />
       </Field>
+
+      {inviteOnly && (
+        <Field label="Invite code" required hint="Sign-ups are invite-only right now.">
+          <Input name="invite_code" placeholder="Your code" required />
+        </Field>
+      )}
 
       {state.error && (
         <p className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-[13px] text-red-700">

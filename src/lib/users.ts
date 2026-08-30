@@ -39,7 +39,10 @@ export function createUser(input: {
 }
 
 export function updateUser(userId: string, patch: Partial<User>): void {
-  const keys = ["name", "email", "avatar_url", "plan", "credits", "onboarded", "team_id", "role", "password_hash"] as const;
+  const keys = [
+    "name", "email", "avatar_url", "plan", "credits", "onboarded",
+    "team_id", "role", "password_hash", "suspended", "last_seen_at",
+  ] as const;
   const sets: string[] = [];
   const params: unknown[] = [];
   for (const k of keys) {

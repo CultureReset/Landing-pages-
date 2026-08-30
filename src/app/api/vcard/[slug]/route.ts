@@ -17,7 +17,9 @@ export async function GET(
 ) {
   const { slug } = await params;
   const site = siteBySlug(slug);
-  if (!site) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!site || site.suspended === 1) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   const name = site.owner_name || site.business_name;
   const [first, ...rest] = name.split(" ");

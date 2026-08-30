@@ -16,6 +16,7 @@ import {
   Stat,
 } from "@/components/ui/primitives";
 import { inviteMemberAction, removeMemberAction, renameTeamAction } from "@/lib/actions/account";
+import { pagePath } from "@/config/brand";
 import type { ActionState } from "@/lib/actions/site";
 
 interface Member {
@@ -95,11 +96,11 @@ export function TeamManager({
                 </div>
                 {m.slug && (
                   <Link
-                    href={`/p/${m.slug}`}
+                    href={pagePath(m.slug)}
                     target="_blank"
                     className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-ink-200 px-3 font-mono text-[12px] text-ink-600 hover:border-ink-300"
                   >
-                    /p/{m.slug}
+                    {pagePath(m.slug)}
                     <Icon name="arrowUpRight" size={13} />
                   </Link>
                 )}

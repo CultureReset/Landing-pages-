@@ -6,6 +6,7 @@ import { Icon } from "@/components/ui/icon";
 import { CopyButton, Spinner } from "@/components/ui/interactive";
 import { buttonClass, cx } from "@/components/ui/primitives";
 import { setPublishedAction } from "@/lib/actions/site";
+import { pagePath } from "@/config/brand";
 
 export function Topbar({
   slug,
@@ -33,9 +34,9 @@ export function Topbar({
           {published ? "Live" : "Draft"}
         </span>
         <code className="truncate rounded-lg bg-ink-100 px-2.5 py-1.5 font-mono text-[12px] text-ink-700">
-          /p/{slug}
+          {pagePath(slug)}
         </code>
-        <CopyButton value={`/p/${slug}`} variant="ghost" size="sm" iconOnly label="Copy page link" />
+        <CopyButton value={pagePath(slug)} variant="ghost" size="sm" iconOnly label="Copy page link" />
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
@@ -55,7 +56,7 @@ export function Topbar({
         </button>
 
         <Link
-          href={`/p/${slug}`}
+          href={pagePath(slug)}
           target="_blank"
           className={buttonClass("secondary", "sm")}
         >

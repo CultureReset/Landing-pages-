@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
+import { brand } from "@/config/brand";
 
 export default function NotFound() {
   return (
@@ -17,7 +18,7 @@ export default function NotFound() {
           className="mt-6 inline-flex h-11 items-center gap-2 rounded-xl bg-white px-5 text-[14px] font-semibold text-ink-950"
         >
           <Icon name="bolt" size={16} />
-          Make your own Frontdesk
+          Make your own {brand.name} page
         </Link>
       </div>
     </main>

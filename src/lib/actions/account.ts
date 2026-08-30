@@ -18,6 +18,9 @@ import {
 } from "@/lib/users";
 import { createSite, uniqueSlug } from "@/lib/repo";
 import { DEFAULT_HOURS, DEFAULT_SECTIONS, DEFAULT_THEME } from "@/lib/themes";
+import { quota } from "@/lib/entitlements";
+import { CREDIT_BUNDLES, isCreditBundle } from "@/lib/billing";
+import { PLANS, TRIAL_DAYS, planById } from "@/config/plans";
 import type { Plan } from "@/lib/types";
 import type { ActionState } from "./site";
 
@@ -69,7 +72,7 @@ export async function signOutEverywhereAction(): Promise<void> {
 
 export async function changePlanAction(planInput: string): Promise<void> {
   const user = await requireUser();
-  if (!["trial", "individual", "team"].includes(planInput)) return;
+  if (!PLANS.some((p) => p.id === planInput)) return;
   const plan = planInput as Plan;
 
   if (plan === "team" && !user.team_id) {
@@ -85,7 +88,7 @@ export async function topUpCreditsAction(amount: number): Promise<void> {
   const session = await requireUser();
   const user = findUserById(session.id);
   if (!user) return;
-  const safe = [25, 100, 250].includes(amount) ? amount : 25;
+  const safe = isCreditBundle(amount) ? amount : CREDIT_BUNDLES[0];
   updateUser(user.id, { credits: user.credits + safe });
   refresh();
 }
@@ -115,9 +118,21 @@ export async function inviteMemberAction(_prev: ActionState, form: FormData): Pr
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "That email address doesn't look right." };
   if (findUserByEmail(email)) return { error: "Someone already has an account with that email." };
 
+  const seats = quota("seats", {
+    planId: owner.plan,
+    siteId: "",
+    galleryCount: 0,
+    teamId,
+  });
+  if (!seats.allowed) {
+    return {
+      error: `The ${planById(owner.plan).name} plan covers ${seats.limit} seats. Upgrade in Settings → Plan to add more people.`,
+    };
+  }
+
   const team = teamById(teamId);
   if (team && teamMembers(teamId).length >= team.seats) {
-    updateTeam(teamId, { seats: team.seats + 1 });
+    updateTeam(teamId, { seats: Math.min(seats.limit, team.seats + 1) });
   }
 
   // A starter password they change on first sign-in.

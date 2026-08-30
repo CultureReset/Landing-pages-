@@ -1,5 +1,10 @@
+import { pagePath } from "@/config/brand";
+
 export function baseUrl(request?: Request): string {
-  if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL.replace(/\/$/, "");
+  // A forwarded host wins so QR codes point at the domain actually served.
+  if (process.env.NEXT_PUBLIC_BASE_URL && !request) {
+    return process.env.NEXT_PUBLIC_BASE_URL.replace(/\/$/, "");
+  }
   if (request) {
     const url = new URL(request.url);
     const proto = request.headers.get("x-forwarded-proto") ?? url.protocol.replace(":", "");
@@ -10,5 +15,5 @@ export function baseUrl(request?: Request): string {
 }
 
 export function publicUrl(slug: string, request?: Request): string {
-  return `${baseUrl(request)}/p/${slug}`;
+  return `${baseUrl(request)}${pagePath(slug)}`;
 }

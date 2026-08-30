@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/ui/icon";
 import { CopyButton } from "@/components/ui/interactive";
 import { Card, CardHeader, Field, Input, Select, cx } from "@/components/ui/primitives";
+import { pagePath } from "@/config/brand";
 
 export function ShareKit({
   slug,
@@ -25,7 +26,7 @@ export function ShareKit({
   useEffect(() => setOrigin(window.location.origin), []);
 
   const qrSrc = `/api/qr/${slug}?dark=${encodeURIComponent(dark)}&light=${encodeURIComponent(light)}&margin=${margin}`;
-  const fullUrl = `${origin}/p/${slug}`;
+  const fullUrl = `${origin}${pagePath(slug)}`;
   const embed = `<iframe src="${fullUrl}" width="100%" height="720" style="border:0;border-radius:16px" title="${businessName}" loading="lazy"></iframe>`;
 
   return (

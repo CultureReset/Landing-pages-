@@ -7,7 +7,13 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const { user, site } = await requireSite();
   return (
     <DashboardShell
-      user={{ name: user.name, email: user.email, avatar_url: user.avatar_url, plan: user.plan }}
+      user={{
+        name: user.name,
+        email: user.email,
+        avatar_url: user.avatar_url,
+        plan: user.plan,
+        isAdmin: user.isAdmin,
+      }}
       topbar={<Topbar slug={site.slug} published={site.published === 1} credits={user.credits} />}
     >
       {children}

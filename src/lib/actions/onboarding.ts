@@ -3,12 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireSite } from "@/lib/guard";
-import { createLink, linksForSite, slugTaken, slugify, updateSite, uniqueSlug } from "@/lib/repo";
+import { claimHandle, createLink, linksForSite, slugify, updateSite, uniqueSlug } from "@/lib/repo";
 import { themeById } from "@/lib/themes";
 import { updateUser } from "@/lib/users";
 import { VOCAB } from "@/lib/vocab";
 import type { BusinessType } from "@/lib/types";
+import { validateHandle } from "@/lib/handles";
 import type { ActionState } from "./site";
+import { pagePath } from "@/config/brand";
 
 export async function onboardingStepOne(_prev: ActionState, form: FormData): Promise<ActionState> {
   const { site } = await requireSite();
@@ -92,10 +94,12 @@ export async function onboardingFinish(_prev: ActionState, form: FormData): Prom
   const { user, site } = await requireSite();
   const slug = slugify(String(form.get("slug") ?? ""));
 
-  if (slug.length < 3) return { error: "Use at least 3 characters — letters, numbers and dashes." };
-  if (slugTaken(slug, site.id)) return { error: "That address is taken. Try another." };
+  const problem = validateHandle(slug);
+  if (problem) return { error: problem };
 
-  updateSite(site.id, { slug, published: 1 });
+  if (!claimHandle(site.id, slug)) return { error: "That address is taken. Try another." };
+
+  updateSite(site.id, { published: 1 });
   updateUser(user.id, { onboarded: 1 });
 
   revalidatePath("/dashboard", "layout");

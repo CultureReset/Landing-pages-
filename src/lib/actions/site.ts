@@ -3,16 +3,22 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireSite } from "@/lib/guard";
+import { quota } from "@/lib/entitlements";
+import { NOT_YOURS, ownedTestimonial, tenant } from "@/lib/tenant";
 import {
-  slugTaken,
-  slugify,
-  updateSite,
+  claimHandle,
   createTestimonial,
   deleteTestimonial,
-  updateTestimonial,
   siteById,
+  slugify,
+  updateSite,
+  updateTestimonial,
 } from "@/lib/repo";
+import { features } from "@/config/features";
+import { validateHandle } from "@/lib/handles";
 import { themeById } from "@/lib/themes";
+import { limitsFor } from "@/config/plans";
+import { pagePath } from "@/config/brand";
 import type { DayHours, SectionConfig, SectionId, SiteStat, ThemeConfig } from "@/lib/types";
 
 function refresh() {
@@ -58,14 +64,21 @@ export async function saveProfileAction(_prev: ActionState, form: FormData): Pro
 
 export async function saveSlugAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   const { site } = await requireSite();
-  const raw = String(form.get("slug") ?? "");
-  const slug = slugify(raw);
-  if (slug.length < 3) return { error: "Use at least 3 characters — letters, numbers and dashes." };
-  if (slugTaken(slug, site.id)) return { error: "That address is already taken. Try another." };
-  updateSite(site.id, { slug });
+  if (!features.handleChanges) {
+    return { error: "Handles are fixed on this workspace. Contact support to change yours." };
+  }
+
+  const slug = slugify(String(form.get("slug") ?? ""));
+  const problem = validateHandle(slug);
+  if (problem) return { error: problem };
+
+  const claimed = claimHandle(site.id, slug);
+  if (!claimed) return { error: "That address is already taken. Try another." };
+
   refresh();
-  return { ok: true, message: `Your page now lives at /p/${slug}` };
+  return { ok: true, message: `Your page now lives at ${pagePath(slug)}` };
 }
+
 
 export async function saveSeoAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   const { site } = await requireSite();
@@ -193,21 +206,24 @@ export async function saveHoursAction(_prev: ActionState, form: FormData): Promi
 /* ------------------------------------------------------------------ gallery */
 
 export async function saveGalleryAction(_prev: ActionState, form: FormData): Promise<ActionState> {
-  const { site } = await requireSite();
+  const { user, site } = await requireSite();
+  const cap = limitsFor(user.plan).galleryImages;
   const urls = String(form.get("gallery") ?? "")
     .split(/[\n,]/)
     .map((u) => u.trim())
     .filter(Boolean)
-    .slice(0, 24);
+    .slice(0, cap);
   updateSite(site.id, { gallery: urls });
   refresh();
   return { ok: true, message: `Gallery updated — ${urls.length} image${urls.length === 1 ? "" : "s"}.` };
 }
 
 export async function addGalleryImageAction(url: string): Promise<void> {
-  const { site } = await requireSite();
+  const { user, site } = await requireSite();
   if (!url) return;
-  updateSite(site.id, { gallery: [...site.gallery, url].slice(0, 24) });
+  const cap = limitsFor(user.plan).galleryImages;
+  if (site.gallery.length >= cap) return;
+  updateSite(site.id, { gallery: [...site.gallery, url].slice(0, cap) });
   refresh();
 }
 
@@ -223,13 +239,13 @@ export async function setPublishedAction(published: boolean): Promise<void> {
   const { site } = await requireSite();
   updateSite(site.id, { published: published ? 1 : 0 });
   refresh();
-  revalidatePath(`/p/${site.slug}`);
+  revalidatePath(pagePath(site.slug));
 }
 
 /* ------------------------------------------------------------- testimonials */
 
 export async function saveTestimonialAction(_prev: ActionState, form: FormData): Promise<ActionState> {
-  const { site } = await requireSite();
+  const ctx = await tenant();
   const id = String(form.get("id") ?? "");
   const payload = {
     author: String(form.get("author") ?? "").trim(),
@@ -241,16 +257,29 @@ export async function saveTestimonialAction(_prev: ActionState, form: FormData):
   if (!payload.author || !payload.quote) return { error: "A name and a quote are required." };
 
   if (id) {
+    const owned = await ownedTestimonial(id);
+    if (!owned) return { error: NOT_YOURS };
     updateTestimonial(id, payload);
-  } else {
-    createTestimonial(site.id, payload);
+    refresh();
+    return { ok: true, message: "Testimonial saved." };
   }
+
+  const capacity = quota("testimonials", {
+    planId: ctx.user.plan,
+    siteId: ctx.site.id,
+    galleryCount: ctx.site.gallery.length,
+    teamId: ctx.user.team_id,
+  });
+  if (!capacity.allowed) return { error: capacity.message };
+
+  createTestimonial(ctx.site.id, payload);
   refresh();
   return { ok: true, message: "Testimonial saved." };
 }
 
 export async function deleteTestimonialAction(id: string): Promise<void> {
-  await requireSite();
+  const owned = await ownedTestimonial(id);
+  if (!owned) return;
   deleteTestimonial(id);
   refresh();
 }
@@ -259,7 +288,7 @@ export async function deleteTestimonialAction(id: string): Promise<void> {
 
 export async function viewLiveAction(): Promise<void> {
   const { site } = await requireSite();
-  redirect(`/p/${site.slug}`);
+  redirect(pagePath(site.slug));
 }
 
 export async function siteSnapshot(siteId: string) {

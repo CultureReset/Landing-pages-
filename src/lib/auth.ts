@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { cache } from "react";
 import { get, id, now, run } from "./db";
 import { findUserById } from "./users";
+import { isAdminEmail } from "@/config/features";
 import type { SessionUser, User } from "./types";
 
 const COOKIE = "fd_session";
@@ -53,6 +54,8 @@ function toSessionUser(u: User): SessionUser {
     credits: u.credits,
     onboarded: u.onboarded,
     avatar_url: u.avatar_url,
+    suspended: u.suspended ?? 0,
+    isAdmin: isAdminEmail(u.email),
   };
 }
 

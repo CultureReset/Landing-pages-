@@ -14,6 +14,7 @@ import { THEME_PRESETS } from "@/lib/themes";
 import { BUSINESS_ICON } from "@/components/ui/icon";
 import { BUSINESS_TYPES, VOCAB } from "@/lib/vocab";
 import type { ActionState } from "@/lib/actions/site";
+import { brand, pagePath } from "@/config/brand";
 import type { Site } from "@/lib/types";
 
 function Error({ state }: { state: ActionState }) {
@@ -222,7 +223,7 @@ function StepFour({ site }: { site: Site }) {
           <Field label="Your address" required>
             <div className="flex items-center">
               <span className="flex h-10 items-center rounded-l-xl border border-r-0 border-ink-200 bg-ink-50 px-3 font-mono text-[13px] text-ink-500">
-                /p/
+                /{brand.pagePrefix}/
               </span>
               <Input
                 name="slug"
@@ -237,7 +238,7 @@ function StepFour({ site }: { site: Site }) {
 
           <div className="rounded-2xl border border-ink-200 bg-ink-950 p-5 text-center text-white">
             <p className="text-[11px] uppercase tracking-[0.12em] text-white/40">Your page will live at</p>
-            <p className="mt-2 break-all font-mono text-[15px]">/p/{slug || "your-name"}</p>
+            <p className="mt-2 break-all font-mono text-[15px]">{pagePath(slug || "your-name")}</p>
           </div>
 
           <ul className="space-y-2">

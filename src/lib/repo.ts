@@ -1,5 +1,6 @@
 import { all, get, id, json, now, run } from "./db";
 import { DEFAULT_HOURS, DEFAULT_SECTIONS, DEFAULT_THEME } from "./themes";
+import { isReservedHandle } from "@/config/reserved";
 import type {
   DayHours,
   Item,
@@ -73,16 +74,50 @@ export function allSites(): Site[] {
 }
 
 export function slugTaken(slug: string, exceptSiteId?: string): boolean {
-  const row = get<{ id: string }>("SELECT id FROM sites WHERE slug = ?", slug.toLowerCase());
+  const row = get<{ id: string }>("SELECT id FROM sites WHERE lower(slug) = ?", slug.toLowerCase());
   return !!row && row.id !== exceptSiteId;
 }
 
+/** True when SQLite rejected a write because a unique index already holds it. */
+function isUniqueViolation(error: unknown): boolean {
+  return error instanceof Error && /UNIQUE constraint failed/i.test(error.message);
+}
+
+/**
+ * A free handle suggestion. Advisory only — two simultaneous signups can be
+ * handed the same answer, so the write path must still handle a collision.
+ */
 export function uniqueSlug(base: string): string {
   const clean = slugify(base) || "page";
   let candidate = clean;
   let n = 1;
-  while (slugTaken(candidate)) candidate = `${clean}-${++n}`;
+  while (isReservedHandle(candidate) || slugTaken(candidate)) {
+    candidate = `${clean}-${++n}`;
+  }
   return candidate;
+}
+
+/** Appends a short random suffix, for retrying after a collision. */
+function jitterSlug(base: string): string {
+  const clean = slugify(base) || "page";
+  return `${clean}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
+/**
+ * Claims a handle for an existing site. Returns false when another tenant
+ * already holds it. The unique index is the arbiter, not a prior read, so two
+ * concurrent claims cannot both succeed.
+ */
+export function claimHandle(siteId: string, handle: string): boolean {
+  const slug = slugify(handle);
+  if (!slug || isReservedHandle(slug)) return false;
+  try {
+    run("UPDATE sites SET slug = ?, updated_at = ? WHERE id = ?", slug, now(), siteId);
+    return true;
+  } catch (error) {
+    if (isUniqueViolation(error)) return false;
+    throw error;
+  }
 }
 
 export function slugify(input: string): string {
@@ -95,13 +130,27 @@ export function slugify(input: string): string {
 }
 
 export function createSite(userId: string, input: Partial<Site>): Site {
+  const base = input.slug || input.business_name || "page";
+  // Retry rather than trust the pre-read: concurrent signups race for handles.
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const slug = attempt === 0 ? uniqueSlug(base) : jitterSlug(base);
+    try {
+      return insertSite(userId, slug, input);
+    } catch (error) {
+      if (!isUniqueViolation(error)) throw error;
+    }
+  }
+  throw new Error("Could not allocate a unique handle after several attempts");
+}
+
+function insertSite(userId: string, slug: string, input: Partial<Site>): Site {
   const sid = id("site");
-  const slug = uniqueSlug(input.slug || input.business_name || "page");
   run(
     `INSERT INTO sites (id, user_id, slug, business_name, owner_name, headline, tagline, bio, business_type,
       avatar_url, cover_url, logo_url, location, address, phone, email, whatsapp, website, credential,
-      verified, published, theme, layout, hours, gallery, stats, seo, created_at, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      verified, published, featured, suspended, theme, layout, hours, gallery, stats, seo,
+      created_at, updated_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     sid,
     userId,
     slug,
@@ -123,6 +172,8 @@ export function createSite(userId: string, input: Partial<Site>): Site {
     input.credential ?? "",
     input.verified ?? 0,
     input.published ?? 1,
+    input.featured ?? 0,
+    input.suspended ?? 0,
     JSON.stringify(input.theme ?? DEFAULT_THEME),
     JSON.stringify(input.layout ?? DEFAULT_SECTIONS),
     JSON.stringify(input.hours ?? DEFAULT_HOURS),
@@ -138,7 +189,7 @@ export function createSite(userId: string, input: Partial<Site>): Site {
 const SITE_SCALARS = [
   "slug", "business_name", "owner_name", "headline", "tagline", "bio", "business_type",
   "avatar_url", "cover_url", "logo_url", "location", "address", "phone", "email",
-  "whatsapp", "website", "credential", "verified", "published",
+  "whatsapp", "website", "credential", "verified", "published", "featured", "suspended",
 ] as const;
 
 const SITE_JSON = ["theme", "layout", "hours", "gallery", "stats", "seo"] as const;
@@ -448,3 +499,132 @@ export function recordEvent(siteId: string, input: Partial<SiteEvent>): void {
 }
 
 export const STATUS_ORDER: ItemStatus[] = ["available", "featured_deal", "pending", "coming_soon", "sold"];
+
+/* ------------------------------------------------------- counts & scoping */
+
+function count(sql: string, ...params: unknown[]): number {
+  return get<{ c: number }>(sql, ...params)?.c ?? 0;
+}
+
+export function countItems(siteId: string): number {
+  return count("SELECT COUNT(*) AS c FROM items WHERE site_id = ?", siteId);
+}
+
+export function countLinks(siteId: string, isAction: boolean): number {
+  return count(
+    "SELECT COUNT(*) AS c FROM links WHERE site_id = ? AND is_action = ?",
+    siteId,
+    isAction ? 1 : 0,
+  );
+}
+
+export function countTestimonials(siteId: string): number {
+  return count("SELECT COUNT(*) AS c FROM testimonials WHERE site_id = ?", siteId);
+}
+
+export function storageUsedBytes(siteId: string): number {
+  return get<{ total: number | null }>(
+    "SELECT COALESCE(SUM(size), 0) AS total FROM media WHERE site_id = ?",
+    siteId,
+  )?.total ?? 0;
+}
+
+/** Sites belonging to a known set of users — used by the team roll-up. */
+export function sitesForUsers(userIds: string[]): Site[] {
+  if (!userIds.length) return [];
+  const marks = userIds.map(() => "?").join(",");
+  return all<SiteRow>(`SELECT * FROM sites WHERE user_id IN (${marks})`, ...userIds).map(
+    (r) => mapSite(r)!,
+  );
+}
+
+/**
+ * Pages the operator has explicitly featured. Customer pages are never
+ * advertised automatically — featuring is an opt-in an admin performs.
+ */
+export function featuredSites(limit = 6): Site[] {
+  return all<SiteRow>(
+    `SELECT * FROM sites
+     WHERE featured = 1 AND published = 1 AND suspended = 0
+     ORDER BY created_at LIMIT ?`,
+    limit,
+  ).map((r) => mapSite(r)!);
+}
+
+export function setFeatured(siteId: string, featured: boolean): void {
+  run("UPDATE sites SET featured = ? WHERE id = ?", featured ? 1 : 0, siteId);
+}
+
+export function setSuspended(siteId: string, suspended: boolean): void {
+  run("UPDATE sites SET suspended = ? WHERE id = ?", suspended ? 1 : 0, siteId);
+}
+
+/* ------------------------------------------------------- operator queries */
+
+export interface TenantSummary {
+  site_id: string;
+  slug: string;
+  business_name: string;
+  business_type: string;
+  published: number;
+  featured: number;
+  suspended: number;
+  created_at: string;
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  plan: string;
+  items: number;
+  leads: number;
+  views: number;
+}
+
+export function tenantSummaries(options: { query?: string; limit?: number; offset?: number } = {}) {
+  const { query = "", limit = 50, offset = 0 } = options;
+  const like = `%${query.toLowerCase()}%`;
+  const where = query
+    ? `WHERE lower(s.slug) LIKE ? OR lower(s.business_name) LIKE ? OR lower(u.email) LIKE ? OR lower(u.name) LIKE ?`
+    : "";
+  const params = query ? [like, like, like, like] : [];
+
+  const rows = all<TenantSummary>(
+    `SELECT s.id AS site_id, s.slug, s.business_name, s.business_type, s.published,
+            s.featured, s.suspended, s.created_at,
+            u.id AS user_id, u.name AS user_name, u.email AS user_email, u.plan,
+            (SELECT COUNT(*) FROM items i WHERE i.site_id = s.id) AS items,
+            (SELECT COUNT(*) FROM leads l WHERE l.site_id = s.id) AS leads,
+            (SELECT COUNT(*) FROM events e WHERE e.site_id = s.id AND e.kind = 'view') AS views
+     FROM sites s
+     JOIN users u ON u.id = s.user_id
+     ${where}
+     ORDER BY s.created_at DESC
+     LIMIT ? OFFSET ?`,
+    ...params,
+    limit,
+    offset,
+  );
+
+  const total = count(
+    `SELECT COUNT(*) AS c FROM sites s JOIN users u ON u.id = s.user_id ${where}`,
+    ...params,
+  );
+
+  return { rows, total };
+}
+
+export function platformStats() {
+  const since30 = new Date(Date.now() - 30 * 864e5).toISOString();
+  return {
+    tenants: count("SELECT COUNT(*) AS c FROM sites"),
+    published: count("SELECT COUNT(*) AS c FROM sites WHERE published = 1 AND suspended = 0"),
+    users: count("SELECT COUNT(*) AS c FROM users"),
+    newThisMonth: count("SELECT COUNT(*) AS c FROM users WHERE created_at >= ?", since30),
+    leads: count("SELECT COUNT(*) AS c FROM leads"),
+    views30: count("SELECT COUNT(*) AS c FROM events WHERE kind = 'view' AND created_at >= ?", since30),
+    storageBytes:
+      get<{ total: number | null }>("SELECT COALESCE(SUM(size), 0) AS total FROM media")?.total ?? 0,
+    byPlan: all<{ plan: string; c: number }>(
+      "SELECT plan, COUNT(*) AS c FROM users GROUP BY plan ORDER BY c DESC",
+    ),
+  };
+}

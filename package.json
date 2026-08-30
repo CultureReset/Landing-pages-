@@ -2,13 +2,14 @@
   "name": "frontdesk",
   "version": "1.0.0",
   "private": true,
-  "description": "Frontdesk — a link-in-bio landing page platform. Every business gets a public page, a dashboard, and lead capture.",
+  "description": "Frontdesk \u2014 a link-in-bio landing page platform. Every business gets a public page, a dashboard, and lead capture.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx --conditions=react-server scripts/seed.ts",
+    "test:tenancy": "tsx --conditions=react-server scripts/test-tenancy.ts"
   },
   "dependencies": {
     "next": "^16.3.3",

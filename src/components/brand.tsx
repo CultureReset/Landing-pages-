@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cx } from "./ui/primitives";
+import { brand } from "@/config/brand";
 
 export function Logo({
   className,
@@ -25,7 +26,7 @@ export function Logo({
       <span
         className={cx("text-[15px] font-semibold tracking-[-0.02em]", invert ? "text-white" : "text-ink-950")}
       >
-        Frontdesk
+        {brand.name}
       </span>
     </span>
   );
@@ -33,7 +34,7 @@ export function Logo({
 
 export function LogoLink({ href = "/", ...rest }: { href?: string; className?: string; invert?: boolean; size?: number }) {
   return (
-    <Link href={href} aria-label="Frontdesk home">
+    <Link href={href} aria-label={`${brand.name} home`}>
       <Logo {...rest} />
     </Link>
   );

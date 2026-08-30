@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Logo } from "@/components/brand";
 import { Icon } from "@/components/ui/icon";
 import { buttonClass, cx } from "@/components/ui/primitives";
+import { brand } from "@/config/brand";
 
 const LINKS = [
   { href: "#how", label: "How it works" },
@@ -33,7 +34,7 @@ export function MarketingNav({ signedIn }: { signedIn: boolean }) {
       )}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-6">
-        <Link href="/" aria-label="Frontdesk home">
+        <Link href="/" aria-label={`${brand.name} home`}>
           <Logo />
         </Link>
 
@@ -125,7 +126,6 @@ export function MarketingFooter() {
             links: [
               { href: "/signup", label: "Start free trial" },
               { href: "/login", label: "Log in" },
-              { href: "/p/nora-vance", label: "See a real page" },
             ],
           },
           {
@@ -153,7 +153,7 @@ export function MarketingFooter() {
       </div>
       <div className="border-t border-ink-200">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-5 text-[12.5px] text-ink-400 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <span>© {new Date().getFullYear()} Frontdesk. All rights reserved.</span>
+          <span>© {new Date().getFullYear()} {brand.name}. All rights reserved.</span>
           <span>Built as a working demo — every page you see here is live.</span>
         </div>
       </div>

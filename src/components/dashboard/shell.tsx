@@ -13,7 +13,7 @@ export function DashboardShell({
   topbar,
   children,
 }: {
-  user: { name: string; email: string; avatar_url: string | null; plan: string };
+  user: { name: string; email: string; avatar_url: string | null; plan: string; isAdmin: boolean };
   topbar: ReactNode;
   children: ReactNode;
 }) {
@@ -28,7 +28,7 @@ export function DashboardShell({
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className="flex h-14 shrink-0 items-center justify-between px-5">
-        <Link href="/dashboard" aria-label="Frontdesk dashboard">
+        <Link href="/dashboard" aria-label="Dashboard home">
           <Logo />
         </Link>
         <button
@@ -67,6 +67,20 @@ export function DashboardShell({
       </nav>
 
       <div className="shrink-0 border-t border-ink-200 p-3">
+        {user.isAdmin && (
+          <Link
+            href="/admin"
+            className={cx(
+              "mb-2 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-colors",
+              pathname.startsWith("/admin")
+                ? "bg-ink-950 text-white"
+                : "text-ink-600 hover:bg-ink-100 hover:text-ink-950",
+            )}
+          >
+            <Icon name="shield" size={16} className="text-ink-400" />
+            Operator console
+          </Link>
+        )}
         <Link
           href="/dashboard/settings"
           className="flex items-center gap-2.5 rounded-lg p-2 transition-colors hover:bg-ink-100"

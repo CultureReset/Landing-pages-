@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
 import { backdropStyle, themeVars } from "@/lib/themes";
+import { brand } from "@/config/brand";
 import { vocab } from "@/lib/vocab";
 import type { Item, Site, SiteLink, Testimonial } from "@/lib/types";
 import { ActionRow, LinkStack, StatRow } from "./actions";
@@ -135,7 +136,7 @@ export function SitePage({ data, preview = false }: { data: PageData; preview?: 
 
           {ordered.map((b) => (has(b.id) ? b.node : null))}
 
-          {!preview && (
+          {!preview && brand.showPoweredBy && (
             <footer className="mt-14 border-t pt-6 text-center" style={{ borderColor: "var(--s-border)" }}>
               <Link
                 href="/"
@@ -143,7 +144,7 @@ export function SitePage({ data, preview = false }: { data: PageData; preview?: 
                 style={{ color: "var(--s-muted)" }}
               >
                 <Icon name="bolt" size={13} />
-                Built with Frontdesk
+                Built with {brand.name}
               </Link>
             </footer>
           )}

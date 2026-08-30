@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Instrument_Serif, Space_Grotesk } from "next/font/google";
 import "./globals.css";
+import { brand } from "@/config/brand";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -23,15 +24,16 @@ const grotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   title: {
-    default: "Frontdesk — turn interest into the first interaction",
-    template: "%s · Frontdesk",
+    default: `${brand.name} — ${brand.tagline.replace(/\.$/, "").toLowerCase()}`,
+    template: `%s · ${brand.name}`,
   },
   description:
-    "Frontdesk gives every business one link: a live page with your listings, services, links and contact options, plus a dashboard for leads and analytics.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"),
+    `${brand.name} gives every business one link: a live page with your listings, services, links and contact ` +
+    "options, plus a dashboard for leads and analytics.",
+  metadataBase: new URL(brand.url),
   openGraph: {
     type: "website",
-    siteName: "Frontdesk",
+    siteName: brand.name,
   },
 };
 

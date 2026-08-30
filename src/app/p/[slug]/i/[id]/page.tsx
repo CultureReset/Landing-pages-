@@ -12,6 +12,7 @@ import { itemById, linksForSite } from "@/lib/repo";
 import { backdropStyle, themeVars } from "@/lib/themes";
 import { loadPageData } from "@/lib/page-data";
 import { vocab } from "@/lib/vocab";
+import { pagePath } from "@/config/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,7 @@ export default async function ItemPage({
 
           <div className="flex items-center justify-between py-4">
             <Link
-              href={`/p/${site.slug}`}
+              href={pagePath(site.slug)}
               className="inline-flex items-center gap-1.5 text-[13px] font-medium transition-opacity hover:opacity-70"
               style={{ color: "var(--s-muted)" }}
             >
@@ -224,7 +225,7 @@ export default async function ItemPage({
               </p>
             </div>
             <Link
-              href={`/p/${site.slug}`}
+              href={pagePath(site.slug)}
               className="shrink-0 px-3.5 py-2 text-[12.5px] font-semibold"
               style={{ border: `1px solid var(--s-border)`, borderRadius: "var(--s-radius)" }}
             >

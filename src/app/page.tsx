@@ -6,91 +6,26 @@ import { Icon } from "@/components/ui/icon";
 import { Disclosure } from "@/components/ui/interactive";
 import { buttonClass, cx } from "@/components/ui/primitives";
 import { currentUser } from "@/lib/auth";
-import { allSites } from "@/lib/repo";
+import { featuredSites } from "@/lib/repo";
 import { vocab } from "@/lib/vocab";
+import { brand, pagePath } from "@/config/brand";
+import { features } from "@/config/features";
+import { marketing } from "@/config/marketing";
+import { TRIAL_DAYS, formatPlanPrice, publicPlans } from "@/config/plans";
 
 export const metadata: Metadata = {
-  title: "Frontdesk — turn interest into the first interaction",
+  title: `${brand.name} — ${brand.tagline.replace(/\.$/, "").toLowerCase()}`,
   description:
     "One link for your whole business: listings, services, links and every way to reach you — with a dashboard for leads, analytics and QR codes behind it.",
 };
 
 export const dynamic = "force-dynamic";
 
-const HOW = [
-  {
-    step: "01",
-    title: "Tell us what you do",
-    detail:
-      "Pick your trade, add your name, a line about what you do and how people reach you. Two minutes, no design decisions.",
-    icon: "user",
-  },
-  {
-    step: "02",
-    title: "Add what you want people to see",
-    detail:
-      "Listings, services, menu items, packages — whatever you sell. Photos, prices, details, and the links you already send people.",
-    icon: "grid",
-  },
-  {
-    step: "03",
-    title: "Share one link everywhere",
-    detail:
-      "Bio, signature, sign, business card, NFC card. Every tap and enquiry lands back in your dashboard.",
-    icon: "share",
-  },
-];
-
-const CHANNELS = [
-  "Phone", "WhatsApp", "SMS", "Email", "Calendly", "Cal.com", "Instagram", "TikTok", "LinkedIn",
-  "Facebook", "YouTube", "X", "Google Maps", "Apple Maps", "Google Reviews", "Trustpilot", "Stripe",
-  "PayPal", "Square", "Shopify", "Etsy", "Zillow", "Rightmove", "Airbnb", "OpenTable", "Resy",
-  "Booksy", "Squarespace", "Substack", "Spotify", "Patreon", "Eventbrite", "Typeform", "Notion",
-  "Dropbox", "Google Drive", "PDF downloads", "Custom links",
-];
-
-const FAQ = [
-  {
-    q: "Do I have to build the page myself?",
-    a: "You can, and most people do — it takes about ten minutes. Pick a theme, fill in your details, add what you sell. If you'd rather not, send us what you have and we'll set the first version up for you.",
-  },
-  {
-    q: "Can I change it after it's live?",
-    a: "Everything, any time. Listings, prices, links, colours, section order, what's hidden and what's shown. Changes appear on your live page as soon as you save — there's no publish queue and no waiting.",
-  },
-  {
-    q: "Can people contact me straight from a listing?",
-    a: "Yes. Every listing has its own page with your quick actions on it — call, WhatsApp, email, book a time — plus an enquiry form that tells you exactly which listing they were looking at.",
-  },
-  {
-    q: "Does it work with the tools I already use?",
-    a: "It links out to anything with a URL: your booking system, your CRM, your socials, your payment links, your existing website. Frontdesk is the front door, not a replacement for what's behind it.",
-  },
-  {
-    q: "Do I need a website already?",
-    a: "No. Plenty of people use Frontdesk as their only web presence. If you do have a site, this sits in front of it — and you can embed your Frontdesk page inside it too.",
-  },
-  {
-    q: "What about teams and brokerages?",
-    a: "Team plans start at two people. Everyone gets their own page, their own leads and their own dashboard, under one shared brand — and the owner sees the roll-up.",
-  },
-  {
-    q: "How do the studio credits work?",
-    a: "Drafting copy costs one credit per go. Branded covers and QR codes are free and unlimited. Credits come with your plan and you can top up any time.",
-  },
-  {
-    q: "Is there a free trial?",
-    a: "Seven days, everything unlocked, no card needed. If it isn't for you, do nothing and it ends.",
-  },
-];
-
 export default async function LandingPage() {
   const user = await currentUser();
-  // Oldest first, so the showcase order matches the order the demo tells it in.
-  const published = allSites()
-    .filter((s) => s.published === 1)
-    .reverse();
-  const sites = published.slice(0, 6);
+  // Only pages an operator has explicitly featured. A customer's page is never
+  // advertised here just because it happens to be published.
+  const sites = features.publicDirectory ? featuredSites(6) : [];
   const hero = sites[0];
 
   return (
@@ -110,61 +45,60 @@ export default async function LandingPage() {
           <div>
             <Eyebrow>
               <span className="size-1.5 rounded-full bg-brand-500" />
-              7 days free · no card
+              {marketing.hero.eyebrow}
             </Eyebrow>
 
             <h1 className="mt-5 text-[clamp(2.3rem,6vw,3.9rem)] font-semibold leading-[1.03] tracking-[-0.04em] text-ink-950 text-balance-tight">
-              Turn interest into the first interaction.
+              {marketing.hero.title}
             </h1>
 
             <p className="mt-6 max-w-xl text-[17px] leading-relaxed text-ink-600 sm:text-[18px]">
-              One link that carries everything you sell, every way to reach you, and the proof that you&apos;re worth
-              reaching. Behind it: a dashboard for your listings, your leads and what people actually tap.
+              {marketing.hero.body}
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link href="/signup" className={buttonClass("primary", "lg")}>
-                Start your 7 days free
+                {marketing.hero.primaryCta}
                 <Icon name="arrowRight" size={17} />
               </Link>
-              <Link href={hero ? `/p/${hero.slug}` : "/login"} className={buttonClass("secondary", "lg")}>
-                <Icon name="play" size={17} />
-                See a live page
-              </Link>
+              {hero && (
+                <Link href={pagePath(hero.slug)} className={buttonClass("secondary", "lg")}>
+                  <Icon name="play" size={17} />
+                  {marketing.hero.secondaryCta}
+                </Link>
+              )}
             </div>
 
             <dl className="mt-12 grid max-w-lg grid-cols-3 gap-6 border-t border-ink-200 pt-7">
-              {[
-                ["10 min", "to a page you'd share"],
-                ["1 link", "for every channel"],
-                ["0", "code required"],
-              ].map(([value, label]) => (
-                <div key={label}>
-                  <dt className="text-[22px] font-semibold tracking-[-0.03em] text-ink-950">{value}</dt>
-                  <dd className="mt-1 text-[12.5px] leading-snug text-ink-500">{label}</dd>
+              {marketing.hero.stats.map((stat) => (
+                <div key={stat.label}>
+                  <dt className="text-[22px] font-semibold tracking-[-0.03em] text-ink-950">{stat.value}</dt>
+                  <dd className="mt-1 text-[12.5px] leading-snug text-ink-500">{stat.label}</dd>
                 </div>
               ))}
             </dl>
           </div>
 
-          {hero && (
+          {hero ? (
             <div className="relative">
               <div
                 className="absolute inset-x-8 top-8 bottom-8 rounded-[3rem] bg-ink-950/[0.04] blur-2xl"
                 aria-hidden
               />
               <PhoneFrame
-                src={`/p/${hero.slug}?preview=1`}
-                label={`${hero.business_name} — live Frontdesk page`}
+                src={`${pagePath(hero.slug)}?preview=1`}
+                label={`${hero.business_name} — live ${brand.name} page`}
                 height={620}
               />
               <p className="relative mt-5 text-center text-[12.5px] text-ink-400">
                 A real page, rendered live —{" "}
-                <Link href={`/p/${hero.slug}`} className="font-medium text-ink-700 underline underline-offset-4">
+                <Link href={pagePath(hero.slug)} className="font-medium text-ink-700 underline underline-offset-4">
                   open it full size
                 </Link>
               </p>
             </div>
+          ) : (
+            <HeroPlaceholder />
           )}
         </div>
       </section>
@@ -178,7 +112,7 @@ export default async function LandingPage() {
         />
 
         <div className="mt-12 grid gap-5 md:grid-cols-3">
-          {HOW.map((s) => (
+          {marketing.how.map((s) => (
             <div key={s.step} className="rounded-2xl border border-ink-200 bg-white p-6">
               <div className="flex items-center justify-between">
                 <span className="grid size-10 place-items-center rounded-xl bg-ink-950 text-white">
@@ -194,11 +128,12 @@ export default async function LandingPage() {
       </Section>
 
       {/* ---------------------------------------------------------- examples */}
+      {sites.length > 0 && (
       <Section id="examples">
         <SectionHead
           eyebrow="Live examples"
           title="One engine. Every kind of business."
-          description="These are real pages running on Frontdesk right now — different trades, different themes, the same dashboard behind each one. Open any of them."
+          description={`These are real pages running on ${brand.name} right now — different trades, different themes, the same dashboard behind each one. Open any of them.`}
         />
 
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -207,7 +142,7 @@ export default async function LandingPage() {
             return (
               <Link
                 key={s.id}
-                href={`/p/${s.slug}`}
+                href={pagePath(s.slug)}
                 className="group overflow-hidden rounded-2xl border border-ink-200 bg-white transition-all hover:-translate-y-0.5 hover:border-ink-300 hover:shadow-lift"
               >
                 <div className="relative h-32 overflow-hidden" style={{ background: s.theme.bg }}>
@@ -249,6 +184,7 @@ export default async function LandingPage() {
           })}
         </div>
       </Section>
+      )}
 
       {/* ---------------------------------------------------------- features */}
       <Section id="features" tone="muted" className="space-y-24 sm:space-y-28">
@@ -294,13 +230,13 @@ export default async function LandingPage() {
         <FeatureRow
           eyebrow="Off the screen"
           title="Works on a sign, a card, and a handshake."
-          description="A link is only useful where people are. Frontdesk gives you the same page as a QR code, an NFC tap and a contact card that saves straight to a phone."
+          description={`A link is only useful where people are. ${brand.name} gives you the same page as a QR code, an NFC tap and a contact card that saves straight to a phone.`}
           bullets={[
             { icon: "qr", title: "QR codes in your own colours", detail: "Download as SVG, print at any size. Scans are tagged as QR traffic.", },
             { icon: "nfc", title: "NFC cards", detail: "Write your link to a blank card in about a minute. No app for them to install.", },
             { icon: "download", title: "Save Contact", detail: "One tap drops your name, number, email and page into their phone.", },
           ]}
-          visual={<ShareMock />}
+          visual={<ShareMock slug={hero?.slug ?? null} name={hero?.owner_name ?? brand.name} />}
         />
 
         <FeatureRow
@@ -328,7 +264,7 @@ export default async function LandingPage() {
               Everything you already use, in one place people can act on.
             </h2>
             <p className="mt-4 max-w-lg text-[16px] leading-relaxed text-white/55">
-              Frontdesk doesn&apos;t ask you to move. If it has a link, it goes on your page — booking system, CRM,
+              {brand.name} doesn&apos;t ask you to move. If it has a link, it goes on your page — booking system, CRM,
               payment link, socials, the PDF you keep emailing people.
             </p>
             <Link href="/signup" className={cx(buttonClass("secondary", "lg"), "mt-8 !border-white/20 !bg-white !text-ink-950")}>
@@ -338,7 +274,7 @@ export default async function LandingPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {CHANNELS.map((c) => (
+            {marketing.channels.map((c) => (
               <span
                 key={c}
                 className="rounded-full border border-white/12 bg-white/[0.04] px-3.5 py-2 text-[13px] text-white/75"
@@ -359,64 +295,31 @@ export default async function LandingPage() {
           description="Seven days free on either plan. No card to start, and no feature held back to sell you an upgrade later."
         />
 
-        <div className="mx-auto mt-12 grid max-w-4xl gap-5 md:grid-cols-2">
-          {[
-            {
-              id: "individual",
-              name: "Individual",
-              price: "$19",
-              cadence: "per month, billed annually",
-              blurb: "For one person with something to sell.",
-              features: [
-                "Your own page and handle",
-                "Unlimited listings and links",
-                "Leads inbox with CSV export",
-                "Analytics, QR codes and NFC",
-                "Save Contact card",
-                "50 studio credits a month",
-              ],
-              featured: false,
-            },
-            {
-              id: "team",
-              name: "Brokerage & teams",
-              price: "$15",
-              cadence: "per person per month, billed annually",
-              blurb: "From two people, each with their own page.",
-              features: [
-                "Everything in Individual",
-                "A page per team member",
-                "Shared brand across the team",
-                "Roll-up view for the owner",
-                "Per-person leads and analytics",
-                "200 studio credits a month",
-              ],
-              featured: true,
-            },
-          ].map((plan) => (
+        <div className="mx-auto mt-12 grid max-w-4xl grid-cols-1 gap-5 md:grid-cols-2">
+          {publicPlans().map((plan) => (
             <div
               key={plan.id}
               className={cx(
                 "flex flex-col rounded-2xl border p-7",
-                plan.featured ? "border-ink-950 bg-ink-950 text-white" : "border-ink-200 bg-white",
+                plan.highlight ? "border-ink-950 bg-ink-950 text-white" : "border-ink-200 bg-white",
               )}
             >
               <div className="flex items-start justify-between gap-3">
                 <h3 className="text-[17px] font-semibold tracking-[-0.02em]">{plan.name}</h3>
-                {plan.featured && (
+                {plan.highlight && (
                   <span className="rounded-full bg-brand-500 px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-[0.08em]">
                     Most chosen
                   </span>
                 )}
               </div>
-              <p className={cx("mt-1.5 text-[13.5px]", plan.featured ? "text-white/55" : "text-ink-500")}>
+              <p className={cx("mt-1.5 text-[13.5px]", plan.highlight ? "text-white/55" : "text-ink-500")}>
                 {plan.blurb}
               </p>
 
               <div className="mt-6 flex items-baseline gap-2">
-                <span className="text-[38px] font-semibold tracking-[-0.04em]">{plan.price}</span>
-                <span className={cx("text-[13px]", plan.featured ? "text-white/55" : "text-ink-500")}>
-                  {plan.cadence}
+                <span className="text-[38px] font-semibold tracking-[-0.04em]">{formatPlanPrice(plan)}</span>
+                <span className={cx("text-[13px]", plan.highlight ? "text-white/55" : "text-ink-500")}>
+                  {plan.price.cadence}
                 </span>
               </div>
 
@@ -424,12 +327,12 @@ export default async function LandingPage() {
                 {plan.features.map((f) => (
                   <li
                     key={f}
-                    className={cx("flex items-start gap-2.5 text-[14px]", plan.featured ? "text-white/85" : "text-ink-700")}
+                    className={cx("flex items-start gap-2.5 text-[14px]", plan.highlight ? "text-white/85" : "text-ink-700")}
                   >
                     <Icon
                       name="check"
                       size={16}
-                      className={cx("mt-0.5 shrink-0", plan.featured ? "text-brand-400" : "text-brand-500")}
+                      className={cx("mt-0.5 shrink-0", plan.highlight ? "text-brand-400" : "text-brand-500")}
                     />
                     {f}
                   </li>
@@ -439,12 +342,12 @@ export default async function LandingPage() {
               <Link
                 href={`/signup?plan=${plan.id}`}
                 className={cx(
-                  buttonClass(plan.featured ? "secondary" : "primary", "lg"),
+                  buttonClass(plan.highlight ? "secondary" : "primary", "lg"),
                   "mt-8 w-full",
-                  plan.featured && "!border-transparent !bg-white !text-ink-950",
+                  plan.highlight && "!border-transparent !bg-white !text-ink-950",
                 )}
               >
-                Start 7 days free
+                Start {TRIAL_DAYS} days free
               </Link>
             </div>
           ))}
@@ -464,7 +367,7 @@ export default async function LandingPage() {
             description="If yours isn't here, the trial answers most of them faster than we can."
           />
           <div className="rounded-2xl border border-ink-200 bg-white px-6">
-            {FAQ.map((f, i) => (
+            {marketing.faq.map((f, i) => (
               <Disclosure key={f.q} title={f.q} defaultOpen={i === 0}>
                 {f.a}
               </Disclosure>
@@ -477,19 +380,21 @@ export default async function LandingPage() {
       <Section tone="dark" className="text-center">
         <div className="mx-auto max-w-2xl">
           <h2 className="text-[clamp(1.9rem,4.5vw,3rem)] font-semibold leading-[1.08] tracking-[-0.04em] text-balance-tight">
-            Your next customer is one tap away from everything you do.
+            {marketing.finalCta.title}
           </h2>
           <p className="mx-auto mt-5 max-w-xl text-[16.5px] leading-relaxed text-white/55">
-            Start free, build the page in an afternoon, and put the link everywhere you already are.
+            {marketing.finalCta.body}
           </p>
           <div className="mt-9 flex flex-wrap justify-center gap-3">
             <Link href="/signup" className={cx(buttonClass("secondary", "lg"), "!border-transparent !bg-white !text-ink-950")}>
-              Start your 7 days free
+              {marketing.hero.primaryCta}
               <Icon name="arrowRight" size={17} />
             </Link>
-            <Link href="/login" className={cx(buttonClass("ghost", "lg"), "!text-white hover:!bg-white/10")}>
-              Explore the demo account
-            </Link>
+            {features.demoAccount && (
+              <Link href="/login" className={cx(buttonClass("ghost", "lg"), "!text-white hover:!bg-white/10")}>
+                Explore the demo account
+              </Link>
+            )}
           </div>
         </div>
       </Section>
@@ -583,18 +488,26 @@ function LeadsMock() {
   );
 }
 
-function ShareMock() {
+function ShareMock({ slug, name }: { slug: string | null; name: string }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div className="flex flex-col items-center justify-center rounded-2xl border border-ink-200 bg-white p-6 shadow-lift">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/api/qr/nora-vance" alt="Example QR code" width={132} height={132} loading="lazy" />
-        <p className="mt-3 font-mono text-[11px] text-ink-400">/p/nora-vance</p>
+        {slug ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`/api/qr/${slug}`} alt="Example QR code" width={132} height={132} loading="lazy" />
+            <p className="mt-3 font-mono text-[11px] text-ink-400">{pagePath(slug)}</p>
+          </>
+        ) : (
+          <span className="grid size-[132px] place-items-center rounded-xl border border-dashed border-ink-200 text-ink-300">
+            <Icon name="qr" size={38} />
+          </span>
+        )}
       </div>
       <div className="space-y-4">
         <div className="rounded-2xl border border-ink-200 bg-ink-950 p-5 text-white shadow-lift">
-          <p className="text-[14px] font-semibold">Nora Vance</p>
-          <p className="mt-0.5 text-[11.5px] text-white/50">Vance &amp; Co. Realty</p>
+          <p className="text-[14px] font-semibold">{name}</p>
+          <p className="mt-0.5 text-[11.5px] text-white/50">{brand.name}</p>
           <div className="mt-5 flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2">
             <Icon name="nfc" size={15} />
             <span className="text-[11.5px]">Tap to open</span>
@@ -642,6 +555,24 @@ function AnalyticsMock() {
             <span className="text-[12.5px] font-semibold tabular-nums text-ink-950">{count}</span>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/** Shown on a fresh install, before any page has been featured. */
+function HeroPlaceholder() {
+  return (
+    <div className="relative mx-auto w-full max-w-[318px] rounded-[2.4rem] border border-ink-800 bg-ink-950 p-2.5 shadow-pop">
+      <span className="absolute left-1/2 top-4 z-10 h-4 w-20 -translate-x-1/2 rounded-full bg-ink-950" />
+      <div className="flex h-[620px] flex-col items-center justify-center gap-4 rounded-[1.9rem] bg-ink-900 px-8 text-center">
+        <span className="grid size-14 place-items-center rounded-2xl bg-white/10 text-white/60">
+          <Icon name="bolt" size={24} />
+        </span>
+        <p className="text-[15px] font-semibold text-white">Your page goes here</p>
+        <p className="text-[13px] leading-relaxed text-white/45">
+          Create an account and this is what your customers will see.
+        </p>
       </div>
     </div>
   );

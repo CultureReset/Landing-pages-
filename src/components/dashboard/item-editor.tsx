@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/primitives";
 import { deleteItemAction, duplicateItemAction, saveItemAction } from "@/lib/actions/items";
 import { money } from "@/lib/format";
+import { itemPath } from "@/config/brand";
 import type { Item, Vocabulary } from "@/lib/types";
 import type { ActionState } from "@/lib/actions/site";
 
@@ -258,7 +259,7 @@ export function ItemEditor({
                 <CardHeader title="Manage" />
                 <div className="flex flex-wrap gap-2 p-5">
                   <Link
-                    href={`/p/${slug}/i/${item.id}`}
+                    href={itemPath(slug, item.id)}
                     target="_blank"
                     className={cx(
                       "inline-flex h-8 items-center gap-1.5 rounded-lg border border-ink-200 px-3 text-[12.5px] font-medium text-ink-700 hover:border-ink-300",

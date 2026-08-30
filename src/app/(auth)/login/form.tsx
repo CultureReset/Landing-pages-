@@ -6,7 +6,7 @@ import { Field, Input } from "@/components/ui/primitives";
 import { SubmitButton } from "@/components/ui/interactive";
 import { Icon } from "@/components/ui/icon";
 
-export function LoginForm() {
+export function LoginForm({ demoEnabled }: { demoEnabled: boolean }) {
   const [state, action] = useActionState<FormState, FormData>(signInAction, {});
 
   return (
@@ -31,6 +31,8 @@ export function LoginForm() {
         </SubmitButton>
       </form>
 
+      {demoEnabled && (
+        <>
       <div className="my-6 flex items-center gap-3 text-[12px] uppercase tracking-[0.1em] text-ink-400">
         <span className="h-px flex-1 bg-ink-200" />
         or
@@ -45,6 +47,8 @@ export function LoginForm() {
       <p className="mt-3 text-center text-[12px] leading-relaxed text-ink-400">
         Loads a fully populated agency with listings, leads and 60 days of analytics.
       </p>
+        </>
+      )}
     </>
   );
 }

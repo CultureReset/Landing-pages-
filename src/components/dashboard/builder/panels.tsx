@@ -21,6 +21,7 @@ import {
 } from "@/lib/actions/site";
 import { SECTION_META, THEME_PRESETS } from "@/lib/themes";
 import { BUSINESS_TYPES, VOCAB } from "@/lib/vocab";
+import { brand, pagePath } from "@/config/brand";
 import type { DayHours, SectionConfig, Site, SiteStat } from "@/lib/types";
 
 /* ---------------------------------------------------------------- Profile */
@@ -441,12 +442,12 @@ export function AddressPanel({ site }: { site: Site }) {
         description="The link you'll print on cards, signs and QR codes."
         action={saveSlugAction}
         submitLabel="Update address"
-        footer={<span className="font-mono text-ink-400">/p/{site.slug}</span>}
+        footer={<span className="font-mono text-ink-400">{pagePath(site.slug)}</span>}
       >
         <Field label="Your handle" hint="Letters, numbers and dashes. Changing it breaks existing printed links.">
           <div className="flex items-center gap-0">
             <span className="flex h-10 items-center rounded-l-xl border border-r-0 border-ink-200 bg-ink-50 px-3 font-mono text-[13px] text-ink-500">
-              /p/
+              /{brand.pagePrefix}/
             </span>
             <Input name="slug" defaultValue={site.slug} className="rounded-l-none font-mono" required />
           </div>
@@ -472,7 +473,7 @@ export function AddressPanel({ site }: { site: Site }) {
 
         <div className="rounded-xl border border-ink-200 bg-ink-50 p-4">
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-400">Preview</p>
-          <p className="text-[13px] text-emerald-700">yoursite.com › p › {site.slug}</p>
+          <p className="text-[13px] text-emerald-700">{brand.url.replace(/^https?:\/\//, "")} › {brand.pagePrefix} › {site.slug}</p>
           <p className="mt-0.5 text-[17px] leading-snug text-[#1a0dab]">
             {site.seo.title || `${site.owner_name || site.business_name} — ${site.business_name}`}
           </p>

@@ -2,20 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireSite } from "@/lib/guard";
-import { createItem, deleteItem, itemById, itemsForSite, reorderItems, updateItem } from "@/lib/repo";
+import { itemImageCap, quota } from "@/lib/entitlements";
+import { NOT_YOURS, ownedItem, tenant } from "@/lib/tenant";
+import { createItem, deleteItem, itemsForSite, reorderItems, updateItem } from "@/lib/repo";
 import type { ItemStatus, Spec } from "@/lib/types";
 import type { ActionState } from "./site";
 
 function refresh() {
   revalidatePath("/dashboard", "layout");
-}
-
-async function ownedItem(itemId: string) {
-  const { site } = await requireSite();
-  const item = itemById(itemId);
-  if (!item || item.site_id !== site.id) return null;
-  return { site, item };
 }
 
 function parseSpecs(form: FormData): Spec[] {
@@ -29,7 +23,7 @@ function parseSpecs(form: FormData): Spec[] {
 }
 
 export async function saveItemAction(_prev: ActionState, form: FormData): Promise<ActionState> {
-  const { site } = await requireSite();
+  const ctx = await tenant();
   const itemId = String(form.get("id") ?? "");
 
   const title = String(form.get("title") ?? "").trim();
@@ -40,7 +34,7 @@ export async function saveItemAction(_prev: ActionState, form: FormData): Promis
     .split("\n")
     .map((s) => s.trim())
     .filter(Boolean)
-    .slice(0, 12);
+    .slice(0, itemImageCap(ctx.user.plan));
 
   const payload = {
     title: title.slice(0, 120),
@@ -67,13 +61,21 @@ export async function saveItemAction(_prev: ActionState, form: FormData): Promis
 
   if (itemId) {
     const owned = await ownedItem(itemId);
-    if (!owned) return { error: "That entry no longer exists." };
+    if (!owned) return { error: NOT_YOURS };
     updateItem(itemId, payload);
     refresh();
     return { ok: true, message: "Saved." };
   }
 
-  const created = createItem(site.id, payload);
+  const capacity = quota("items", {
+    planId: ctx.user.plan,
+    siteId: ctx.site.id,
+    galleryCount: ctx.site.gallery.length,
+    teamId: ctx.user.team_id,
+  });
+  if (!capacity.allowed) return { error: capacity.message };
+
+  const created = createItem(ctx.site.id, payload);
   refresh();
   redirect(`/dashboard/showcase/${created.id}?created=1`);
 }
@@ -108,18 +110,27 @@ export async function setItemStatusAction(itemId: string, status: string): Promi
 }
 
 export async function reorderItemsAction(orderedIds: string[]): Promise<void> {
-  const { site } = await requireSite();
-  reorderItems(site.id, orderedIds);
+  const ctx = await tenant();
+  // reorderItems is already scoped by site_id, so foreign ids are simply ignored.
+  reorderItems(ctx.site.id, orderedIds);
   refresh();
 }
 
 export async function duplicateItemAction(itemId: string): Promise<void> {
   const owned = await ownedItem(itemId);
   if (!owned) return;
-  const { site, item } = owned;
-  const copy = createItem(site.id, {
-    ...item,
-    title: `${item.title} (copy)`,
+
+  const capacity = quota("items", {
+    planId: owned.user.plan,
+    siteId: owned.site.id,
+    galleryCount: owned.site.gallery.length,
+    teamId: owned.user.team_id,
+  });
+  if (!capacity.allowed) return;
+
+  const copy = createItem(owned.site.id, {
+    ...owned.row,
+    title: `${owned.row.title} (copy)`,
     active: 0,
     featured: 0,
   });
@@ -128,9 +139,17 @@ export async function duplicateItemAction(itemId: string): Promise<void> {
 }
 
 export async function createBlankItemAction(): Promise<void> {
-  const { site } = await requireSite();
-  const count = itemsForSite(site.id).length;
-  const item = createItem(site.id, { title: `Untitled ${count + 1}`, active: 0 });
+  const ctx = await tenant();
+  const capacity = quota("items", {
+    planId: ctx.user.plan,
+    siteId: ctx.site.id,
+    galleryCount: ctx.site.gallery.length,
+    teamId: ctx.user.team_id,
+  });
+  if (!capacity.allowed) redirect("/dashboard/showcase?limit=items");
+
+  const count = itemsForSite(ctx.site.id).length;
+  const item = createItem(ctx.site.id, { title: `Untitled ${count + 1}`, active: 0 });
   refresh();
   redirect(`/dashboard/showcase/${item.id}`);
 }

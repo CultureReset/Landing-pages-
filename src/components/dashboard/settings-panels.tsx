@@ -15,7 +15,10 @@ import {
   topUpCreditsAction,
 } from "@/lib/actions/account";
 import { signOutAction } from "@/lib/actions/auth";
+import { CREDIT_BUNDLES } from "@/lib/billing";
 import { shortDate } from "@/lib/format";
+import { PLANS, TRIAL_DAYS, formatPlanPrice, isUnlimited, limitsFor } from "@/config/plans";
+import { brand } from "@/config/brand";
 import type { SessionUser } from "@/lib/types";
 
 export function AccountPanel({ user }: { user: SessionUser }) {
@@ -71,45 +74,86 @@ export function AccountPanel({ user }: { user: SessionUser }) {
   );
 }
 
-const PLANS = [
-  {
-    id: "trial",
-    name: "Free trial",
-    price: "Free for 7 days",
-    detail: "Everything unlocked. No card needed.",
-    features: ["One page", "Unlimited listings", "Leads and analytics", "QR and vCard"],
-  },
-  {
-    id: "individual",
-    name: "Individual",
-    price: "$19 / month",
-    detail: "Billed annually. Cancel any time.",
-    features: ["Everything in the trial", "Custom handle", "Priority support", "50 studio credits a month"],
-  },
-  {
-    id: "team",
-    name: "Brokerage & teams",
-    price: "$15 / person / month",
-    detail: "From two people. Billed annually.",
-    features: ["A page per person", "Shared branding", "Roll-up analytics", "200 studio credits a month"],
-  },
-];
+export interface UsageRow {
+  label: string;
+  used: number;
+  limit: number;
+  unlimited: boolean;
+}
 
-export function PlanPanel({ user, trialEnds }: { user: SessionUser; trialEnds: string | null }) {
+export function PlanPanel({
+  user,
+  trialEnds,
+  usage,
+  storage,
+}: {
+  user: SessionUser;
+  trialEnds: string | null;
+  usage: UsageRow[];
+  storage: { usedBytes: number; limitBytes: number; percent: number };
+}) {
   const [pending, start] = useTransition();
+  const mb = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(bytes > 10 * 1024 * 1024 ? 0 : 1)} MB`;
 
   return (
     <div className="space-y-5">
       <Card>
         <CardHeader
+          title="What you're using"
+          description="Counted against your current plan. Limits are enforced when you add something new."
+        />
+        <ul className="divide-y divide-ink-100">
+          {usage.map((row) => {
+            const percent = row.unlimited ? 0 : Math.min(100, Math.round((row.used / Math.max(1, row.limit)) * 100));
+            const tight = !row.unlimited && percent >= 80;
+            return (
+              <li key={row.label} className="px-5 py-3.5">
+                <div className="flex items-baseline justify-between gap-3 text-[13px]">
+                  <span className="text-ink-700">{row.label}</span>
+                  <span className={cx("tabular-nums", tight ? "font-semibold text-amber-700" : "text-ink-950")}>
+                    {row.used}
+                    <span className="text-ink-400"> / {row.unlimited ? "unlimited" : row.limit}</span>
+                  </span>
+                </div>
+                {!row.unlimited && (
+                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-ink-100">
+                    <div
+                      className={cx("h-full rounded-full transition-all", tight ? "bg-amber-500" : "bg-ink-950")}
+                      style={{ width: `${Math.max(2, percent)}%` }}
+                    />
+                  </div>
+                )}
+              </li>
+            );
+          })}
+          <li className="px-5 py-3.5">
+            <div className="flex items-baseline justify-between gap-3 text-[13px]">
+              <span className="text-ink-700">Image storage</span>
+              <span className="tabular-nums text-ink-950">
+                {mb(storage.usedBytes)}
+                <span className="text-ink-400"> / {mb(storage.limitBytes)}</span>
+              </span>
+            </div>
+            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-ink-100">
+              <div
+                className={cx("h-full rounded-full", storage.percent >= 80 ? "bg-amber-500" : "bg-ink-950")}
+                style={{ width: `${Math.max(2, storage.percent)}%` }}
+              />
+            </div>
+          </li>
+        </ul>
+      </Card>
+
+      <Card>
+        <CardHeader
           title="Plan"
           description={
             user.plan === "trial" && trialEnds
-              ? `Your trial runs until ${shortDate(trialEnds)}.`
+              ? `Your ${TRIAL_DAYS}-day trial runs until ${shortDate(trialEnds)}.`
               : "Switch any time — changes apply from your next billing date."
           }
         />
-        <div className="grid gap-3 p-5 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 p-5 lg:grid-cols-3">
           {PLANS.map((p) => {
             const active = user.plan === p.id;
             return (
@@ -125,9 +169,12 @@ export function PlanPanel({ user, trialEnds }: { user: SessionUser; trialEnds: s
                   {active && <Badge tone="brand">Current</Badge>}
                 </div>
                 <p className={cx("mt-2 text-[19px] font-semibold tracking-[-0.02em]", active ? "text-white" : "text-ink-950")}>
-                  {p.price}
+                  {formatPlanPrice(p)}
+                  <span className={cx("ml-1.5 text-[12.5px] font-normal", active ? "text-white/55" : "text-ink-500")}>
+                    {p.price.cadence}
+                  </span>
                 </p>
-                <p className={cx("mt-1 text-[12.5px]", active ? "text-white/55" : "text-ink-500")}>{p.detail}</p>
+                <p className={cx("mt-1 text-[12.5px]", active ? "text-white/55" : "text-ink-500")}>{p.blurb}</p>
                 <ul className="mt-4 flex-1 space-y-1.5">
                   {p.features.map((f) => (
                     <li key={f} className={cx("flex items-start gap-2 text-[13px]", active ? "text-white/80" : "text-ink-600")}>
@@ -153,8 +200,8 @@ export function PlanPanel({ user, trialEnds }: { user: SessionUser; trialEnds: s
           })}
         </div>
         <p className="border-t border-ink-200 px-5 py-3.5 text-[12px] text-ink-400">
-          This build has no payment processor wired in — switching plans updates your account immediately so you can
-          see how each tier behaves.
+          No payment processor is wired in — switching plans updates your account immediately so you can see how each
+          tier behaves. Limits are enforced for real.
         </p>
       </Card>
 
@@ -165,7 +212,7 @@ export function PlanPanel({ user, trialEnds }: { user: SessionUser; trialEnds: s
           action={<Badge tone={user.credits > 5 ? "neutral" : "caution"}>{user.credits} left</Badge>}
         />
         <div className="flex flex-wrap gap-2 p-5">
-          {[25, 100, 250].map((amount) => (
+          {CREDIT_BUNDLES.map((amount) => (
             <button
               key={amount}
               type="button"

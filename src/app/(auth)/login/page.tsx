@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { LoginForm } from "./form";
+import { features } from "@/config/features";
 
 export const metadata: Metadata = { title: "Sign in" };
 
@@ -17,7 +18,7 @@ export default async function LoginPage() {
           Start your 7-day trial
         </Link>
       </p>
-      <LoginForm />
+      <LoginForm demoEnabled={features.demoAccount} />
     </>
   );
 }

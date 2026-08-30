@@ -15,6 +15,8 @@ export interface User {
   trial_ends_at: string | null;
   avatar_url: string | null;
   onboarded: number;
+  suspended: number;
+  last_seen_at: string | null;
   created_at: string;
 }
 
@@ -128,6 +130,9 @@ export interface Site {
   credential: string;
   verified: number;
   published: number;
+  /** Operator-curated: only featured pages appear in the public directory. */
+  featured: number;
+  suspended: number;
   theme: ThemeConfig;
   layout: SectionConfig[];
   hours: DayHours[];
@@ -262,4 +267,6 @@ export interface SessionUser {
   credits: number;
   onboarded: number;
   avatar_url: string | null;
+  suspended: number;
+  isAdmin: boolean;
 }

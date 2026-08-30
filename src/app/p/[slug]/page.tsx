@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SitePage } from "@/components/public/site-page";
 import { loadPageData } from "@/lib/page-data";
+import { pagePath } from "@/config/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,7 @@ export async function generateMetadata({
   return {
     title,
     description,
-    alternates: { canonical: `/p/${site.slug}` },
+    alternates: { canonical: pagePath(site.slug) },
     openGraph: {
       title,
       description,

@@ -7,6 +7,7 @@ import { ReorderList, Spinner, type ReorderHandle } from "@/components/ui/intera
 import { Badge, Button, Card, EmptyState, Input, Select, cx } from "@/components/ui/primitives";
 import { reorderItemsAction, toggleFeaturedAction, toggleItemAction } from "@/lib/actions/items";
 import { money, relativeTime } from "@/lib/format";
+import { itemPath } from "@/config/brand";
 import type { Item, Vocabulary } from "@/lib/types";
 
 const STATUS_TONE: Record<string, string> = {
@@ -200,7 +201,7 @@ function Row({
           {pending ? <Spinner size={14} /> : <Icon name="star" size={15} className={item.featured === 1 ? "fill-current" : ""} />}
         </button>
         <Link
-          href={`/p/${slug}/i/${item.id}`}
+          href={itemPath(slug, item.id)}
           target="_blank"
           className="grid size-8 place-items-center rounded-lg text-ink-300 hover:bg-ink-100 hover:text-ink-700"
           aria-label="View live"

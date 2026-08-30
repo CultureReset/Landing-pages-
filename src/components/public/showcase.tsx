@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { Icon } from "@/components/ui/icon";
 import { money } from "@/lib/format";
 import { vocab } from "@/lib/vocab";
+import { itemPath } from "@/config/brand";
 import type { Item, Site } from "@/lib/types";
 import { track } from "./track";
 
@@ -75,7 +76,7 @@ export function ItemCard({ site, item, list }: { site: Site; item: Item; list?: 
 
   return (
     <Link
-      href={`/p/${site.slug}/i/${item.id}`}
+      href={itemPath(site.slug, item.id)}
       onClick={() => track(site.id, "item_view", item.id, item.title)}
       className={`group block overflow-hidden transition-all duration-200 hover:-translate-y-0.5 ${list ? "flex gap-0" : ""}`}
       style={{

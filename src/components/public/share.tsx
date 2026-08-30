@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { Icon } from "@/components/ui/icon";
+import { pagePath } from "@/config/brand";
 import { track } from "./track";
 
 export function ShareButton({ siteId, slug, name }: { siteId: string; slug: string; name: string }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const url = typeof window !== "undefined" ? window.location.origin + `/p/${slug}` : `/p/${slug}`;
+  const url =
+    typeof window !== "undefined" ? window.location.origin + pagePath(slug) : pagePath(slug);
 
   async function nativeShare() {
     track(siteId, "share", null, "Share");
