@@ -2,8 +2,13 @@ import { NextResponse } from "next/server";
 import { linksForSite, recordEvent, siteBySlug } from "@/lib/repo";
 import { publicUrl } from "@/lib/urls";
 
+/** RFC 6350 text escaping: backslash, semicolon, comma and newline. */
 function escapeVcf(value: string): string {
-  return value.replace(/\\/g, "\\\\").replace(/;/g, "\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\r?\n/g, "\\n");
 }
 
 export async function GET(
