@@ -20,6 +20,7 @@ export async function generateMetadata({
   return {
     title,
     description,
+    themeColor: site.theme.bg,
     alternates: { canonical: pagePath(site.slug) },
     openGraph: {
       title,

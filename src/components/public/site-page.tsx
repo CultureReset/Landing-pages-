@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
-import { backdropStyle, themeVars } from "@/lib/themes";
+import { backdropStyle, safeColor, themeVars } from "@/lib/themes";
 import { brand } from "@/config/brand";
 import { vocab } from "@/lib/vocab";
 import type { Item, Site, SiteLink, Testimonial } from "@/lib/types";
@@ -124,6 +124,9 @@ export function SitePage({ data, preview = false }: { data: PageData; preview?: 
       className="min-h-screen"
       style={{ ...themeVars(site.theme), background: "var(--s-bg)", color: "var(--s-text)", fontFamily: "var(--s-font)" }}
     >
+      {/* Paint the document itself too, so overscroll and the browser chrome
+          match the theme instead of flashing the default white. */}
+      <style>{`:root{--page-bg:${safeColor(site.theme.bg)}}`}</style>
       <div style={backdropStyle(site.theme, site.cover_url)}>
         <div className="mx-auto max-w-[600px] px-5 pb-16">
           {!preview && <TrackView siteId={site.id} />}
@@ -140,7 +143,7 @@ export function SitePage({ data, preview = false }: { data: PageData; preview?: 
             <footer className="mt-14 border-t pt-6 text-center" style={{ borderColor: "var(--s-border)" }}>
               <Link
                 href="/"
-                className="inline-flex items-center gap-1.5 text-[12px] font-medium opacity-60 transition-opacity hover:opacity-100"
+                className="inline-flex min-h-9 items-center gap-1.5 px-3 py-2 text-[12px] font-medium opacity-60 transition-opacity hover:opacity-100"
                 style={{ color: "var(--s-muted)" }}
               >
                 <Icon name="bolt" size={13} />

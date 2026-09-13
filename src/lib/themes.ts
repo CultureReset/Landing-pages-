@@ -266,3 +266,12 @@ export function isLight(hex: string): boolean {
   const lin = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
   return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b) > 0.45;
 }
+
+/**
+ * A colour safe to interpolate into a stylesheet. Theme colours come from our
+ * own presets or a colour input, but this is rendered into a <style> tag, so
+ * anything that is not a plain hex is dropped rather than trusted.
+ */
+export function safeColor(value: string, fallback = "#ffffff"): string {
+  return /^#[0-9a-fA-F]{3,8}$/.test(value.trim()) ? value.trim() : fallback;
+}

@@ -12,3 +12,4 @@ data/*.db-wal
 next-env.d.ts
 tsconfig.tsbuildinfo
 .playwright/
+tests/screenshots/

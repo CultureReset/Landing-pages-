@@ -1,4 +1,5 @@
 import "server-only";
+import { RATE_LIMITS } from "@/config/rate-limits";
 
 /**
  * Fixed-window limiter with a bounded map.
@@ -68,17 +69,6 @@ export function clientIp(request: Request): string {
   return request.headers.get("x-real-ip")?.trim() || "local";
 }
 
-export const LIMITS = {
-  /** Enquiry submissions, per site per address. */
-  leads: { limit: 5, windowSeconds: 600 },
-  /** Sign-in attempts per address, to blunt credential stuffing. */
-  loginByIp: { limit: 10, windowSeconds: 900 },
-  /** Sign-in attempts per account, so one target cannot be ground down. */
-  loginByAccount: { limit: 5, windowSeconds: 900 },
-  /** New accounts per address. */
-  signup: { limit: 5, windowSeconds: 3600 },
-  /** Uploads per user. */
-  uploads: { limit: 60, windowSeconds: 3600 },
-  /** Analytics beacons per address, per site. */
-  track: { limit: 120, windowSeconds: 60 },
-} as const;
+
+/** Thresholds, re-exported so callers have one import. See config/rate-limits.ts. */
+export const LIMITS = RATE_LIMITS;

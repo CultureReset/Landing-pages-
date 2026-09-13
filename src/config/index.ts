@@ -15,3 +15,4 @@ export {
 export { features, adminEmails, isAdminEmail, inviteCodeValid } from "./features";
 export { RESERVED_HANDLES, isReservedHandle, MIN_HANDLE_LENGTH, MAX_HANDLE_LENGTH } from "./reserved";
 export { marketing } from "./marketing";
+export { RATE_LIMITS } from "./rate-limits";

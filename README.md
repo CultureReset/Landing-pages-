@@ -160,12 +160,18 @@ an upload. Tenants see their usage in Settings → Plan.
 Run the checks:
 
 ```bash
-npm run test:tenancy
+npm run test:tenancy   # unit, no server needed
+npm run test:browser   # against a running app
+npm test               # both
 ```
 
-Thirty-four assertions covering cross-tenant reads, directory privacy, handle
-collisions (including 25 concurrent claims on one base name), plan ceilings,
-storage quotas, rate limiting and suspension.
+`test:tenancy` is 34 assertions against a throwaway database: cross-tenant
+reads, directory privacy, handle collisions (including 25 concurrent claims on
+one base name), plan ceilings, storage quotas, rate limiting and suspension.
+
+`test:browser` drives the real app in Chromium — 45 assertions across six
+suites covering routes, the full product flow, two-tenant isolation, plan
+enforcement, upload security and responsive layout. See `tests/README.md`.
 
 ### The operator console
 
@@ -186,6 +192,7 @@ Admins cannot suspend their own account.
 | `features.ts` | Signups open, invite-only, demo account, public directory, uploads, handle changes |
 | `marketing.ts` | Landing page copy: hero, steps, channels, FAQ |
 | `reserved.ts` | Handles nobody may claim |
+| `rate-limits.ts` | Abuse thresholds for sign-in, sign-up, enquiries, uploads |
 
 Nothing outside `src/config/` contains the brand name. Most values also accept
 an environment variable, so one build can serve several deployments.
@@ -222,6 +229,7 @@ Copy `.env.example` to `.env.local`:
 | `SIGNUP_INVITE_ONLY` / `SIGNUP_INVITE_CODES` | Gate registration behind codes. |
 | `PUBLIC_DIRECTORY` | Show operator-featured pages on the marketing site. |
 | `NEXT_PUBLIC_DEMO_ACCOUNT` | One-click demo sign-in. **Turn off in production.** |
+| `RATE_LIMIT_*` | Abuse thresholds (see `src/config/rate-limits.ts`). Raise `RATE_LIMIT_SIGNUP` when running the browser tests. |
 
 Sessions are opaque 32-byte random tokens stored server-side and revocable, so
 there is no signing secret to manage.
@@ -234,7 +242,9 @@ there is no signing secret to manage.
 | `npm run build` | Production build |
 | `npm start` | Serve the production build |
 | `npm run seed` | Wipe and reload the demo businesses |
-| `npm run test:tenancy` | Multi-tenant isolation, limits and rate-limit checks |
+| `npm run test:tenancy` | Unit checks: isolation, limits, rate limiting (no server needed) |
+| `npm run test:browser` | Browser suites against a running app (`tests/README.md`) |
+| `npm test` | Both of the above |
 
 ## Demo accounts
 
